@@ -1,13 +1,56 @@
 const mongoose = require("mongoose");
 
 async function connectDatabase() {
-  if (!process.env.MONGODB_URI) {
-    throw new Error("MONGODB_URI در فایل .env تنظیم نشده است");
+
+  const uri = process.env.MONGODB_URI;
+
+  if (!uri) {
+    throw new Error(
+      "❌ MONGODB_URI در Render پیدا نشد"
+    );
   }
 
-  await mongoose.connect(process.env.MONGODB_URI);
+  console.log("🔄 Connecting to MongoDB...");
 
-  console.log("✅ MongoDB Connected");
+  // نمایش آدرس بدون نمایش رمز عبور
+  const safeUri = uri.replace(
+    /mongodb(\+srv)?:\/\/([^:]+):([^@]+)@/,
+    "mongodb$1://$2:****@"
+  );
+
+  console.log("🔗 MongoDB:", safeUri);
+
+  try {
+
+    await mongoose.connect(uri, {
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000
+    });
+
+    console.log(
+      "✅ MongoDB Connected Successfully"
+    );
+
+    console.log(
+      "📦 Database:",
+      mongoose.connection.name
+    );
+
+    console.log(
+      "🌐 Host:",
+      mongoose.connection.host
+    );
+
+  } catch (error) {
+
+    console.error(
+      "❌ MongoDB Connection Failed:"
+    );
+
+    console.error(error.message);
+
+    throw error;
+  }
 }
 
 module.exports = connectDatabase;
