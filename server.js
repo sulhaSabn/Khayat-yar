@@ -1,8 +1,7 @@
-require("dotenv").config();
-
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
+const mongoose = require("mongoose");
 
 const connectDatabase = require("./database");
 
@@ -10,8 +9,7 @@ const {
   register,
   login,
   me,
-  authRequired,
-  roles
+  authRequired
 } = require("./auth");
 
 const {
@@ -27,21 +25,56 @@ const {
   Setting
 } = require("./models");
 
-const mongoose = require("mongoose");
-
 const app = express();
+
+/*
+==================================================
+ BASIC CONFIGURATION
+==================================================
+*/
+
+// Render provides PORT automatically.
+// For local development, 5000 will be used.
+const PORT = Number(process.env.PORT) || 5000;
+
+// Frontend URL.
+// If CLIENT_URL is not configured, CORS allows requests.
+const CLIENT_URL = process.env.CLIENT_URL || "*";
+
+/*
+==================================================
+ MIDDLEWARE
+==================================================
+*/
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || true
+    origin: CLIENT_URL === "*" ? true : CLIENT_URL
   })
 );
 
-app.use(express.json());
+app.use(
+  express.json({
+    limit: "10mb"
+  })
+);
+
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "10mb"
+  })
+);
 
 app.use(morgan("dev"));
 
-function success(res, data, status = 200) {
+/*
+==================================================
+ HELPER FUNCTIONS
+==================================================
+*/
+
+function success(res, data = null, status = 200) {
   return res.status(status).json({
     success: true,
     data
@@ -59,25 +92,81 @@ function validId(value) {
   return mongoose.isValidObjectId(value);
 }
 
-// HEALTH
-app.get("/api/health", (req, res) => {
-  success(res, {
-    server: "online",
-    database:
-      mongoose.connection.readyState === 1
-        ? "connected"
-        : "disconnected"
+/*
+==================================================
+ ROOT
+==================================================
+*/
+
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    name: "Khayat-Yar API",
+    message: "Khayat-Yar server is running",
+    version: "1.0.0"
   });
 });
 
-// AUTH
-app.post("/api/auth/register", register);
+/*
+==================================================
+ HEALTH CHECK
+==================================================
+*/
 
-app.post("/api/auth/login", login);
+app.get("/api/health", (req, res) => {
+  const state = mongoose.connection.readyState;
 
-app.get("/api/auth/me", authRequired, me);
+  let database = "disconnected";
 
-// CUSTOMERS
+  if (state === 1) {
+    database = "connected";
+  }
+
+  if (state === 2) {
+    database = "connecting";
+  }
+
+  return success(res, {
+    server: "online",
+    database,
+    databaseName: mongoose.connection.name || null,
+    host: mongoose.connection.host || null,
+    time: new Date().toISOString()
+  });
+});
+
+/*
+==================================================
+ AUTH
+==================================================
+*/
+
+// Register
+app.post(
+  "/api/auth/register",
+  register
+);
+
+// Login
+app.post(
+  "/api/auth/login",
+  login
+);
+
+// Current user
+app.get(
+  "/api/auth/me",
+  authRequired,
+  me
+);
+
+/*
+==================================================
+ CUSTOMERS
+==================================================
+*/
+
+// Get customers
 app.get(
   "/api/customers",
   authRequired,
@@ -106,21 +195,45 @@ app.get(
 
       const customers =
         await Customer.find(filter)
-          .sort({ createdAt: -1 });
+          .sort({
+            createdAt: -1
+          });
 
-      success(res, customers);
+      return success(
+        res,
+        customers
+      );
+
     } catch (err) {
-      error(res, "خطا در دریافت مشتریان", 500);
+      console.error(
+        "GET CUSTOMERS ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در دریافت مشتریان",
+        500
+      );
     }
   }
 );
 
+// Create customer
 app.post(
   "/api/customers",
   authRequired,
   async (req, res) => {
     try {
-      if (!req.body.name || !req.body.phone) {
+      const {
+        name,
+        phone,
+        address,
+        notes,
+        customerType
+      } = req.body;
+
+      if (!name || !phone) {
         return error(
           res,
           "نام و شماره تلفن الزامی است"
@@ -128,26 +241,52 @@ app.post(
       }
 
       const customer =
-        await Customer.create(req.body);
+        await Customer.create({
+          name,
+          phone,
+          address,
+          notes,
+          customerType
+        });
 
-      success(res, customer, 201);
+      return success(
+        res,
+        customer,
+        201
+      );
+
     } catch (err) {
-      error(res, "خطا در ایجاد مشتری", 500);
+      console.error(
+        "CREATE CUSTOMER ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در ایجاد مشتری",
+        500
+      );
     }
   }
 );
 
+// Get one customer
 app.get(
   "/api/customers/:id",
   authRequired,
   async (req, res) => {
     try {
       if (!validId(req.params.id)) {
-        return error(res, "شناسه نامعتبر است");
+        return error(
+          res,
+          "شناسه مشتری نامعتبر است"
+        );
       }
 
       const customer =
-        await Customer.findById(req.params.id);
+        await Customer.findById(
+          req.params.id
+        );
 
       if (!customer) {
         return error(
@@ -160,22 +299,34 @@ app.get(
       const measurements =
         await Measurement.find({
           customerId: customer._id
+        }).sort({
+          createdAt: -1
         });
 
       const orders =
         await Order.find({
           customerId: customer._id
-        }).sort({
-          createdAt: -1
-        });
+        })
+          .populate(
+            "measurementId"
+          )
+          .sort({
+            createdAt: -1
+          });
 
-      success(res, {
+      return success(res, {
         customer,
         measurements,
         orders
       });
-    } catch {
-      error(
+
+    } catch (err) {
+      console.error(
+        "GET CUSTOMER ERROR:",
+        err
+      );
+
+      return error(
         res,
         "خطا در دریافت اطلاعات مشتری",
         500
@@ -184,11 +335,19 @@ app.get(
   }
 );
 
+// Update customer
 app.put(
   "/api/customers/:id",
   authRequired,
   async (req, res) => {
     try {
+      if (!validId(req.params.id)) {
+        return error(
+          res,
+          "شناسه مشتری نامعتبر است"
+        );
+      }
+
       const customer =
         await Customer.findByIdAndUpdate(
           req.params.id,
@@ -207,18 +366,39 @@ app.put(
         );
       }
 
-      success(res, customer);
-    } catch {
-      error(res, "خطا در ویرایش مشتری", 500);
+      return success(
+        res,
+        customer
+      );
+
+    } catch (err) {
+      console.error(
+        "UPDATE CUSTOMER ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در ویرایش مشتری",
+        500
+      );
     }
   }
 );
 
+// Delete customer
 app.delete(
   "/api/customers/:id",
   authRequired,
   async (req, res) => {
     try {
+      if (!validId(req.params.id)) {
+        return error(
+          res,
+          "شناسه مشتری نامعتبر است"
+        );
+      }
+
       const customer =
         await Customer.findByIdAndDelete(
           req.params.id
@@ -232,104 +412,106 @@ app.delete(
         );
       }
 
-      success(res, {
-        message: "مشتری حذف شد"
+      // Delete related measurements
+      await Measurement.deleteMany({
+        customerId: customer._id
       });
-    } catch {
-      error(res, "خطا در حذف مشتری", 500);
+
+      return success(
+        res,
+        {
+          message:
+            "مشتری حذف شد"
+        }
+      );
+
+    } catch (err) {
+      console.error(
+        "DELETE CUSTOMER ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در حذف مشتری",
+        500
+      );
     }
   }
 );
 
-// MEASUREMENTS
+/*
+==================================================
+ MEASUREMENTS
+==================================================
+*/
+
+// Get customer measurements
 app.get(
   "/api/customers/:customerId/measurements",
   authRequired,
   async (req, res) => {
     try {
-      const data =
+      if (
+        !validId(
+          req.params.customerId
+        )
+      ) {
+        return error(
+          res,
+          "شناسه مشتری نامعتبر است"
+        );
+      }
+
+      const measurements =
         await Measurement.find({
-          customerId: req.params.customerId
+          customerId:
+            req.params.customerId
         }).sort({
           createdAt: -1
         });
 
-      success(res, data);
-    } catch {
-      error(res, "خطا در دریافت اندازه‌ها", 500);
+      return success(
+        res,
+        measurements
+      );
+
+    } catch (err) {
+      console.error(
+        "GET MEASUREMENTS ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در دریافت اندازه‌ها",
+        500
+      );
     }
   }
 );
 
+// Create measurement
 app.post(
   "/api/customers/:customerId/measurements",
   authRequired,
   async (req, res) => {
     try {
-      const measurement =
-        await Measurement.create({
-          ...req.body,
-          customerId:
-            req.params.customerId
-        });
-
-      success(res, measurement, 201);
-    } catch {
-      error(res, "خطا در ذخیره اندازه‌ها", 500);
-    }
-  }
-);
-
-// ORDERS
-app.get(
-  "/api/orders",
-  authRequired,
-  async (req, res) => {
-    try {
-      const filter = {};
-
-      if (req.query.status) {
-        filter.status = req.query.status;
-      }
-
-      const orders =
-        await Order.find(filter)
-          .populate(
-            "customerId",
-            "name phone"
-          )
-          .sort({
-            createdAt: -1
-          });
-
-      success(res, orders);
-    } catch {
-      error(res, "خطا در دریافت سفارش‌ها", 500);
-    }
-  }
-);
-
-app.post(
-  "/api/orders",
-  authRequired,
-  async (req, res) => {
-    try {
-      const {
-        customerId,
-        price,
-        discount = 0,
-        paidAmount = 0
-      } = req.body;
-
-      if (!validId(customerId)) {
+      if (
+        !validId(
+          req.params.customerId
+        )
+      ) {
         return error(
           res,
-          "مشتری نامعتبر است"
+          "شناسه مشتری نامعتبر است"
         );
       }
 
       const customer =
-        await Customer.findById(customerId);
+        await Customer.findById(
+          req.params.customerId
+        );
 
       if (!customer) {
         return error(
@@ -339,49 +521,333 @@ app.post(
         );
       }
 
+      const measurement =
+        await Measurement.create({
+          ...req.body,
+          customerId:
+            req.params.customerId
+        });
+
+      return success(
+        res,
+        measurement,
+        201
+      );
+
+    } catch (err) {
+      console.error(
+        "CREATE MEASUREMENT ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در ذخیره اندازه‌ها",
+        500
+      );
+    }
+  }
+);
+
+// Update measurement
+app.put(
+  "/api/measurements/:id",
+  authRequired,
+  async (req, res) => {
+    try {
+      if (!validId(req.params.id)) {
+        return error(
+          res,
+          "شناسه اندازه نامعتبر است"
+        );
+      }
+
+      const measurement =
+        await Measurement.findByIdAndUpdate(
+          req.params.id,
+          req.body,
+          {
+            new: true,
+            runValidators: true
+          }
+        );
+
+      if (!measurement) {
+        return error(
+          res,
+          "اندازه پیدا نشد",
+          404
+        );
+      }
+
+      return success(
+        res,
+        measurement
+      );
+
+    } catch (err) {
+      console.error(
+        "UPDATE MEASUREMENT ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در ویرایش اندازه",
+        500
+      );
+    }
+  }
+);
+
+// Delete measurement
+app.delete(
+  "/api/measurements/:id",
+  authRequired,
+  async (req, res) => {
+    try {
+      const measurement =
+        await Measurement.findByIdAndDelete(
+          req.params.id
+        );
+
+      if (!measurement) {
+        return error(
+          res,
+          "اندازه پیدا نشد",
+          404
+        );
+      }
+
+      return success(
+        res,
+        {
+          message:
+            "اندازه حذف شد"
+        }
+      );
+
+    } catch (err) {
+      console.error(
+        "DELETE MEASUREMENT ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در حذف اندازه",
+        500
+      );
+    }
+  }
+);
+
+/*
+==================================================
+ ORDERS
+==================================================
+*/
+
+// Get orders
+app.get(
+  "/api/orders",
+  authRequired,
+  async (req, res) => {
+    try {
+      const filter = {};
+
+      if (req.query.status) {
+        filter.status =
+          req.query.status;
+      }
+
+      if (req.query.customerId) {
+        if (
+          !validId(
+            req.query.customerId
+          )
+        ) {
+          return error(
+            res,
+            "شناسه مشتری نامعتبر است"
+          );
+        }
+
+        filter.customerId =
+          req.query.customerId;
+      }
+
+      const orders =
+        await Order.find(filter)
+          .populate(
+            "customerId",
+            "name phone"
+          )
+          .populate(
+            "measurementId"
+          )
+          .populate(
+            "assignedTailorId",
+            "name phone role"
+          )
+          .sort({
+            createdAt: -1
+          });
+
+      return success(
+        res,
+        orders
+      );
+
+    } catch (err) {
+      console.error(
+        "GET ORDERS ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در دریافت سفارش‌ها",
+        500
+      );
+    }
+  }
+);
+
+// Create order
+app.post(
+  "/api/orders",
+  authRequired,
+  async (req, res) => {
+    try {
+      const {
+        customerId,
+        measurementId,
+        type,
+        description,
+        fabric,
+        color,
+        price,
+        discount = 0,
+        paidAmount = 0,
+        deliveryDate,
+        status = "registered",
+        assignedTailorId,
+        notes
+      } = req.body;
+
+      if (!validId(customerId)) {
+        return error(
+          res,
+          "شناسه مشتری نامعتبر است"
+        );
+      }
+
+      const customer =
+        await Customer.findById(
+          customerId
+        );
+
+      if (!customer) {
+        return error(
+          res,
+          "مشتری پیدا نشد",
+          404
+        );
+      }
+
+      const numericPrice =
+        Number(price || 0);
+
+      const numericDiscount =
+        Number(discount || 0);
+
+      const numericPaid =
+        Number(paidAmount || 0);
+
+      if (numericPrice < 0) {
+        return error(
+          res,
+          "قیمت نامعتبر است"
+        );
+      }
+
       const finalPrice =
         Math.max(
           0,
-          Number(price || 0) -
-            Number(discount || 0)
+          numericPrice -
+            numericDiscount
         );
 
-      const paid =
-        Math.min(
-          finalPrice,
-          Math.max(
-            0,
-            Number(paidAmount || 0)
-          )
+      if (numericPaid < 0) {
+        return error(
+          res,
+          "مبلغ پرداختی نامعتبر است"
         );
+      }
+
+      if (numericPaid > finalPrice) {
+        return error(
+          res,
+          "مبلغ پرداختی نمی‌تواند بیشتر از مبلغ نهایی باشد"
+        );
+      }
 
       const order =
         await Order.create({
-          ...req.body,
-
           orderNumber:
             req.body.orderNumber ||
             `ORD-${Date.now()}`,
 
+          customerId,
+
+          measurementId,
+
+          type,
+
+          description,
+
+          fabric,
+
+          color,
+
           price:
-            Number(price || 0),
+            numericPrice,
 
           discount:
-            Number(discount || 0),
+            numericDiscount,
 
           finalPrice,
 
-          paidAmount: paid,
+          paidAmount:
+            numericPaid,
 
           remainingAmount:
-            finalPrice - paid
+            finalPrice -
+            numericPaid,
+
+          deliveryDate,
+
+          status,
+
+          assignedTailorId,
+
+          notes
         });
 
-      success(res, order, 201);
-    } catch (err) {
-      console.error(err);
+      return success(
+        res,
+        order,
+        201
+      );
 
-      error(
+    } catch (err) {
+      console.error(
+        "CREATE ORDER ERROR:",
+        err
+      );
+
+      return error(
         res,
         "خطا در ایجاد سفارش",
         500
@@ -390,17 +856,33 @@ app.post(
   }
 );
 
+// Get one order
 app.get(
   "/api/orders/:id",
   authRequired,
   async (req, res) => {
     try {
+      if (!validId(req.params.id)) {
+        return error(
+          res,
+          "شناسه سفارش نامعتبر است"
+        );
+      }
+
       const order =
         await Order.findById(
           req.params.id
         )
-          .populate("customerId")
-          .populate("measurementId");
+          .populate(
+            "customerId"
+          )
+          .populate(
+            "measurementId"
+          )
+          .populate(
+            "assignedTailorId",
+            "name phone role"
+          );
 
       if (!order) {
         return error(
@@ -410,18 +892,39 @@ app.get(
         );
       }
 
-      success(res, order);
-    } catch {
-      error(res, "خطا در دریافت سفارش", 500);
+      return success(
+        res,
+        order
+      );
+
+    } catch (err) {
+      console.error(
+        "GET ORDER ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در دریافت سفارش",
+        500
+      );
     }
   }
 );
 
+// Update order
 app.put(
   "/api/orders/:id",
   authRequired,
   async (req, res) => {
     try {
+      if (!validId(req.params.id)) {
+        return error(
+          res,
+          "شناسه سفارش نامعتبر است"
+        );
+      }
+
       const current =
         await Order.findById(
           req.params.id
@@ -437,54 +940,148 @@ app.put(
 
       const price =
         req.body.price === undefined
-          ? current.price
+          ? Number(current.price)
           : Number(req.body.price);
 
       const discount =
         req.body.discount === undefined
-          ? current.discount
+          ? Number(current.discount)
           : Number(req.body.discount);
 
       const finalPrice =
-        Math.max(0, price - discount);
-
-      const paid =
-        req.body.paidAmount === undefined
-          ? current.paidAmount
-          : Number(req.body.paidAmount);
+        Math.max(
+          0,
+          price - discount
+        );
 
       const paidAmount =
-        Math.min(
-          finalPrice,
-          Math.max(0, paid)
+        req.body.paidAmount === undefined
+          ? Number(current.paidAmount)
+          : Number(req.body.paidAmount);
+
+      if (price < 0) {
+        return error(
+          res,
+          "قیمت نامعتبر است"
         );
+      }
+
+      if (discount < 0) {
+        return error(
+          res,
+          "تخفیف نامعتبر است"
+        );
+      }
+
+      if (paidAmount < 0) {
+        return error(
+          res,
+          "مبلغ پرداختی نامعتبر است"
+        );
+      }
+
+      if (paidAmount > finalPrice) {
+        return error(
+          res,
+          "مبلغ پرداختی نمی‌تواند بیشتر از مبلغ نهایی باشد"
+        );
+      }
+
+      const updateData = {
+        ...req.body,
+
+        price,
+
+        discount,
+
+        finalPrice,
+
+        paidAmount,
+
+        remainingAmount:
+          finalPrice -
+          paidAmount
+      };
 
       const order =
         await Order.findByIdAndUpdate(
           req.params.id,
-          {
-            ...req.body,
-            price,
-            discount,
-            finalPrice,
-            paidAmount,
-            remainingAmount:
-              finalPrice - paidAmount
-          },
+          updateData,
           {
             new: true,
             runValidators: true
           }
         );
 
-      success(res, order);
-    } catch {
-      error(res, "خطا در ویرایش سفارش", 500);
+      return success(
+        res,
+        order
+      );
+
+    } catch (err) {
+      console.error(
+        "UPDATE ORDER ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در ویرایش سفارش",
+        500
+      );
     }
   }
 );
 
-// PAYMENTS
+// Delete order
+app.delete(
+  "/api/orders/:id",
+  authRequired,
+  async (req, res) => {
+    try {
+      const order =
+        await Order.findByIdAndDelete(
+          req.params.id
+        );
+
+      if (!order) {
+        return error(
+          res,
+          "سفارش پیدا نشد",
+          404
+        );
+      }
+
+      return success(
+        res,
+        {
+          message:
+            "سفارش حذف شد"
+        }
+      );
+
+    } catch (err) {
+      console.error(
+        "DELETE ORDER ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در حذف سفارش",
+        500
+      );
+    }
+  }
+);
+
+/*
+==================================================
+ PAYMENTS
+==================================================
+*/
+
+// Get payments
 app.get(
   "/api/payments",
   authRequired,
@@ -498,19 +1095,33 @@ app.get(
           )
           .populate(
             "orderId",
-            "orderNumber finalPrice"
+            "orderNumber finalPrice paidAmount remainingAmount"
           )
           .sort({
             createdAt: -1
           });
 
-      success(res, payments);
-    } catch {
-      error(res, "خطا در دریافت پرداخت‌ها", 500);
+      return success(
+        res,
+        payments
+      );
+
+    } catch (err) {
+      console.error(
+        "GET PAYMENTS ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در دریافت پرداخت‌ها",
+        500
+      );
     }
   }
 );
 
+// Create payment
 app.post(
   "/api/payments",
   authRequired,
@@ -523,8 +1134,17 @@ app.post(
         note
       } = req.body;
 
+      if (!validId(orderId)) {
+        return error(
+          res,
+          "شناسه سفارش نامعتبر است"
+        );
+      }
+
       const order =
-        await Order.findById(orderId);
+        await Order.findById(
+          orderId
+        );
 
       if (!order) {
         return error(
@@ -538,13 +1158,24 @@ app.post(
         Number(amount);
 
       if (
-        paymentAmount <= 0 ||
-        paymentAmount >
-          order.remainingAmount
+        !Number.isFinite(
+          paymentAmount
+        ) ||
+        paymentAmount <= 0
       ) {
         return error(
           res,
           "مبلغ پرداخت نامعتبر است"
+        );
+      }
+
+      if (
+        paymentAmount >
+        order.remainingAmount
+      ) {
+        return error(
+          res,
+          "مبلغ پرداخت بیشتر از بدهی سفارش است"
         );
       }
 
@@ -566,16 +1197,20 @@ app.post(
             req.user.id
         });
 
-      order.paidAmount +=
+      order.paidAmount =
+        Number(order.paidAmount || 0) +
         paymentAmount;
 
       order.remainingAmount =
-        order.finalPrice -
-        order.paidAmount;
+        Math.max(
+          0,
+          Number(order.finalPrice) -
+            order.paidAmount
+        );
 
       await order.save();
 
-      success(
+      return success(
         res,
         {
           payment,
@@ -583,78 +1218,214 @@ app.post(
         },
         201
       );
-    } catch {
-      error(res, "خطا در ثبت پرداخت", 500);
+
+    } catch (err) {
+      console.error(
+        "CREATE PAYMENT ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در ثبت پرداخت",
+        500
+      );
     }
   }
 );
 
-// EXPENSES
+/*
+==================================================
+ EXPENSES
+==================================================
+*/
+
+// Get expenses
 app.get(
   "/api/expenses",
   authRequired,
   async (req, res) => {
-    success(
-      res,
-      await Expense.find().sort({
-        createdAt: -1
-      })
-    );
+    try {
+      const expenses =
+        await Expense.find()
+          .populate(
+            "createdBy",
+            "name"
+          )
+          .sort({
+            createdAt: -1
+          });
+
+      return success(
+        res,
+        expenses
+      );
+
+    } catch (err) {
+      console.error(
+        "GET EXPENSES ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در دریافت هزینه‌ها",
+        500
+      );
+    }
   }
 );
 
+// Create expense
 app.post(
   "/api/expenses",
   authRequired,
   async (req, res) => {
     try {
+      const {
+        title,
+        category,
+        amount,
+        description
+      } = req.body;
+
+      if (!title || !category) {
+        return error(
+          res,
+          "عنوان و دسته‌بندی الزامی است"
+        );
+      }
+
+      const numericAmount =
+        Number(amount);
+
+      if (
+        !Number.isFinite(
+          numericAmount
+        ) ||
+        numericAmount < 0
+      ) {
+        return error(
+          res,
+          "مبلغ هزینه نامعتبر است"
+        );
+      }
+
       const expense =
         await Expense.create({
-          ...req.body,
-          createdBy: req.user.id
+          title,
+          category,
+          amount:
+            numericAmount,
+          description,
+          createdBy:
+            req.user.id
         });
 
-      success(res, expense, 201);
-    } catch {
-      error(res, "خطا در ثبت هزینه", 500);
+      return success(
+        res,
+        expense,
+        201
+      );
+
+    } catch (err) {
+      console.error(
+        "CREATE EXPENSE ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در ثبت هزینه",
+        500
+      );
     }
   }
 );
 
-// INVENTORY
+/*
+==================================================
+ INVENTORY
+==================================================
+*/
+
+// Get inventory
 app.get(
   "/api/inventory",
   authRequired,
   async (req, res) => {
-    success(
-      res,
-      await Inventory.find().sort({
-        createdAt: -1
-      })
-    );
+    try {
+      const items =
+        await Inventory.find()
+          .sort({
+            createdAt: -1
+          });
+
+      return success(
+        res,
+        items
+      );
+
+    } catch (err) {
+      console.error(
+        "GET INVENTORY ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در دریافت موجودی",
+        500
+      );
+    }
   }
 );
 
+// Create inventory item
 app.post(
   "/api/inventory",
   authRequired,
   async (req, res) => {
     try {
       const item =
-        await Inventory.create(req.body);
+        await Inventory.create(
+          req.body
+        );
 
-      success(res, item, 201);
-    } catch {
-      error(res, "خطا در ثبت موجودی", 500);
+      return success(
+        res,
+        item,
+        201
+      );
+
+    } catch (err) {
+      console.error(
+        "CREATE INVENTORY ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در ثبت موجودی",
+        500
+      );
     }
   }
 );
 
+// Update inventory
 app.put(
   "/api/inventory/:id",
   authRequired,
   async (req, res) => {
     try {
+      if (!validId(req.params.id)) {
+        return error(
+          res,
+          "شناسه موجودی نامعتبر است"
+        );
+      }
+
       const item =
         await Inventory.findByIdAndUpdate(
           req.params.id,
@@ -665,44 +1436,142 @@ app.put(
           }
         );
 
-      success(res, item);
-    } catch {
-      error(res, "خطا در ویرایش موجودی", 500);
+      if (!item) {
+        return error(
+          res,
+          "آیتم موجودی پیدا نشد",
+          404
+        );
+      }
+
+      return success(
+        res,
+        item
+      );
+
+    } catch (err) {
+      console.error(
+        "UPDATE INVENTORY ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در ویرایش موجودی",
+        500
+      );
     }
   }
 );
 
-// INVOICES
+// Delete inventory
+app.delete(
+  "/api/inventory/:id",
+  authRequired,
+  async (req, res) => {
+    try {
+      const item =
+        await Inventory.findByIdAndDelete(
+          req.params.id
+        );
+
+      if (!item) {
+        return error(
+          res,
+          "آیتم موجودی پیدا نشد",
+          404
+        );
+      }
+
+      return success(
+        res,
+        {
+          message:
+            "آیتم حذف شد"
+        }
+      );
+
+    } catch (err) {
+      console.error(
+        "DELETE INVENTORY ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در حذف موجودی",
+        500
+      );
+    }
+  }
+);
+
+/*
+==================================================
+ INVOICES
+==================================================
+*/
+
+// Get invoices
 app.get(
   "/api/invoices",
   authRequired,
   async (req, res) => {
-    const invoices =
-      await Invoice.find()
-        .populate(
-          "customerId",
-          "name phone"
-        )
-        .populate(
-          "orderId",
-          "orderNumber"
-        )
-        .sort({
-          createdAt: -1
-        });
+    try {
+      const invoices =
+        await Invoice.find()
+          .populate(
+            "customerId",
+            "name phone"
+          )
+          .populate(
+            "orderId",
+            "orderNumber"
+          )
+          .sort({
+            createdAt: -1
+          });
 
-    success(res, invoices);
+      return success(
+        res,
+        invoices
+      );
+
+    } catch (err) {
+      console.error(
+        "GET INVOICES ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در دریافت فاکتورها",
+        500
+      );
+    }
   }
 );
 
+// Create invoice
 app.post(
   "/api/invoices",
   authRequired,
   async (req, res) => {
     try {
+      const {
+        orderId
+      } = req.body;
+
+      if (!validId(orderId)) {
+        return error(
+          res,
+          "شناسه سفارش نامعتبر است"
+        );
+      }
+
       const order =
         await Order.findById(
-          req.body.orderId
+          orderId
         );
 
       if (!order) {
@@ -740,78 +1609,299 @@ app.post(
             order.remainingAmount
         });
 
-      success(res, invoice, 201);
-    } catch {
-      error(res, "خطا در ساخت فاکتور", 500);
+      return success(
+        res,
+        invoice,
+        201
+      );
+
+    } catch (err) {
+      console.error(
+        "CREATE INVOICE ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در ساخت فاکتور",
+        500
+      );
     }
   }
 );
 
-// EMPLOYEES
+/*
+==================================================
+ EMPLOYEES
+==================================================
+*/
+
+// Get employees
 app.get(
   "/api/employees",
   authRequired,
   async (req, res) => {
-    success(
-      res,
-      await Employee.find().sort({
-        createdAt: -1
-      })
-    );
+    try {
+      const employees =
+        await Employee.find()
+          .sort({
+            createdAt: -1
+          });
+
+      return success(
+        res,
+        employees
+      );
+
+    } catch (err) {
+      console.error(
+        "GET EMPLOYEES ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در دریافت کارمندان",
+        500
+      );
+    }
   }
 );
 
+// Create employee
 app.post(
   "/api/employees",
   authRequired,
   async (req, res) => {
     try {
       const employee =
-        await Employee.create(req.body);
+        await Employee.create(
+          req.body
+        );
 
-      success(res, employee, 201);
-    } catch {
-      error(res, "خطا در ثبت کارمند", 500);
+      return success(
+        res,
+        employee,
+        201
+      );
+
+    } catch (err) {
+      console.error(
+        "CREATE EMPLOYEE ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در ثبت کارمند",
+        500
+      );
     }
   }
 );
 
-// NOTIFICATIONS
+// Update employee
+app.put(
+  "/api/employees/:id",
+  authRequired,
+  async (req, res) => {
+    try {
+      const employee =
+        await Employee.findByIdAndUpdate(
+          req.params.id,
+          req.body,
+          {
+            new: true,
+            runValidators: true
+          }
+        );
+
+      if (!employee) {
+        return error(
+          res,
+          "کارمند پیدا نشد",
+          404
+        );
+      }
+
+      return success(
+        res,
+        employee
+      );
+
+    } catch (err) {
+      console.error(
+        "UPDATE EMPLOYEE ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در ویرایش کارمند",
+        500
+      );
+    }
+  }
+);
+
+// Delete employee
+app.delete(
+  "/api/employees/:id",
+  authRequired,
+  async (req, res) => {
+    try {
+      const employee =
+        await Employee.findByIdAndDelete(
+          req.params.id
+        );
+
+      if (!employee) {
+        return error(
+          res,
+          "کارمند پیدا نشد",
+          404
+        );
+      }
+
+      return success(
+        res,
+        {
+          message:
+            "کارمند حذف شد"
+        }
+      );
+
+    } catch (err) {
+      console.error(
+        "DELETE EMPLOYEE ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در حذف کارمند",
+        500
+      );
+    }
+  }
+);
+
+/*
+==================================================
+ NOTIFICATIONS
+==================================================
+*/
+
+// Get notifications
 app.get(
   "/api/notifications",
   authRequired,
   async (req, res) => {
-    success(
-      res,
-      await Notification.find({
-        userId: req.user.id
-      }).sort({
-        createdAt: -1
-      })
-    );
+    try {
+      const notifications =
+        await Notification.find({
+          userId:
+            req.user.id
+        }).sort({
+          createdAt: -1
+        });
+
+      return success(
+        res,
+        notifications
+      );
+
+    } catch (err) {
+      console.error(
+        "GET NOTIFICATIONS ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در دریافت اعلان‌ها",
+        500
+      );
+    }
   }
 );
 
-// DASHBOARD
+// Mark notification as read
+app.put(
+  "/api/notifications/:id/read",
+  authRequired,
+  async (req, res) => {
+    try {
+      const notification =
+        await Notification.findOneAndUpdate(
+          {
+            _id:
+              req.params.id,
+
+            userId:
+              req.user.id
+          },
+          {
+            read: true
+          },
+          {
+            new: true
+          }
+        );
+
+      if (!notification) {
+        return error(
+          res,
+          "اعلان پیدا نشد",
+          404
+        );
+      }
+
+      return success(
+        res,
+        notification
+      );
+
+    } catch (err) {
+      console.error(
+        "READ NOTIFICATION ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در تغییر اعلان",
+        500
+      );
+    }
+  }
+);
+
+/*
+==================================================
+ DASHBOARD / REPORTS
+==================================================
+*/
+
 app.get(
   "/api/reports/dashboard",
   authRequired,
   async (req, res) => {
     try {
-      const today =
+      const now =
         new Date();
 
-      today.setHours(
-        0,
-        0,
-        0,
-        0
-      );
+      const today =
+        new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate()
+        );
 
       const month =
         new Date(
-          today.getFullYear(),
-          today.getMonth(),
+          now.getFullYear(),
+          now.getMonth(),
           1
         );
 
@@ -824,101 +1914,100 @@ app.get(
         customers,
         debts,
         lowStock
-      ] =
-        await Promise.all([
+      ] = await Promise.all([
 
-          Payment.aggregate([
-            {
-              $match: {
-                createdAt: {
-                  $gte: today
-                }
-              }
-            },
-            {
-              $group: {
-                _id: null,
-                total: {
-                  $sum: "$amount"
-                }
+        Payment.aggregate([
+          {
+            $match: {
+              createdAt: {
+                $gte: today
               }
             }
-          ]),
-
-          Payment.aggregate([
-            {
-              $match: {
-                createdAt: {
-                  $gte: month
-                }
-              }
-            },
-            {
-              $group: {
-                _id: null,
-                total: {
-                  $sum: "$amount"
-                }
+          },
+          {
+            $group: {
+              _id: null,
+              total: {
+                $sum: "$amount"
               }
             }
-          ]),
+          }
+        ]),
 
-          Expense.aggregate([
-            {
-              $match: {
-                createdAt: {
-                  $gte: month
-                }
-              }
-            },
-            {
-              $group: {
-                _id: null,
-                total: {
-                  $sum: "$amount"
-                }
+        Payment.aggregate([
+          {
+            $match: {
+              createdAt: {
+                $gte: month
               }
             }
-          ]),
-
-          Order.countDocuments({
-            status: {
-              $in: [
-                "registered",
-                "cutting",
-                "sewing",
-                "fitting"
-              ]
-            }
-          }),
-
-          Order.countDocuments({
-            status: "ready"
-          }),
-
-          Customer.countDocuments(),
-
-          Order.aggregate([
-            {
-              $group: {
-                _id: null,
-                total: {
-                  $sum:
-                    "$remainingAmount"
-                }
+          },
+          {
+            $group: {
+              _id: null,
+              total: {
+                $sum: "$amount"
               }
             }
-          ]),
+          }
+        ]),
 
-          Inventory.find({
-            $expr: {
-              $lte: [
-                "$quantity",
-                "$minimumStock"
-              ]
+        Expense.aggregate([
+          {
+            $match: {
+              createdAt: {
+                $gte: month
+              }
             }
-          })
-        ]);
+          },
+          {
+            $group: {
+              _id: null,
+              total: {
+                $sum: "$amount"
+              }
+            }
+          }
+        ]),
+
+        Order.countDocuments({
+          status: {
+            $in: [
+              "registered",
+              "cutting",
+              "sewing",
+              "fitting"
+            ]
+          }
+        }),
+
+        Order.countDocuments({
+          status: "ready"
+        }),
+
+        Customer.countDocuments(),
+
+        Order.aggregate([
+          {
+            $group: {
+              _id: null,
+              total: {
+                $sum:
+                  "$remainingAmount"
+              }
+            }
+          }
+        ]),
+
+        Inventory.find({
+          $expr: {
+            $lte: [
+              "$quantity",
+              "$minimumStock"
+            ]
+          }
+        })
+      ]);
 
       const salesToday =
         todaySales[0]?.total || 0;
@@ -929,30 +2018,42 @@ app.get(
       const expensesMonth =
         monthExpenses[0]?.total || 0;
 
-      success(res, {
-        salesToday,
+      const totalDebts =
+        debts[0]?.total || 0;
 
-        salesMonth,
+      return success(
+        res,
+        {
+          salesToday,
 
-        expensesMonth,
+          salesMonth,
 
-        profit:
-          salesMonth -
           expensesMonth,
 
-        activeOrders,
+          profit:
+            salesMonth -
+            expensesMonth,
 
-        readyOrders,
+          activeOrders,
 
-        customers,
+          readyOrders,
 
-        debts:
-          debts[0]?.total || 0,
+          customers,
 
-        lowStock
-      });
-    } catch {
-      error(
+          debts:
+            totalDebts,
+
+          lowStock
+        }
+      );
+
+    } catch (err) {
+      console.error(
+        "DASHBOARD ERROR:",
+        err
+      );
+
+      return error(
         res,
         "خطا در گزارش داشبورد",
         500
@@ -961,52 +2062,112 @@ app.get(
   }
 );
 
-// SETTINGS
+/*
+==================================================
+ SETTINGS
+==================================================
+*/
+
+// Get settings
 app.get(
   "/api/settings",
   authRequired,
   async (req, res) => {
-    success(
-      res,
-      await Setting.findOne()
-    );
+    try {
+      const settings =
+        await Setting.findOne();
+
+      return success(
+        res,
+        settings
+      );
+
+    } catch (err) {
+      console.error(
+        "GET SETTINGS ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در دریافت تنظیمات",
+        500
+      );
+    }
   }
 );
 
+// Update settings
 app.put(
   "/api/settings",
   authRequired,
   async (req, res) => {
-    const settings =
-      await Setting.findOneAndUpdate(
-        {},
-        req.body,
-        {
-          new: true,
-          upsert: true,
-          runValidators: true
-        }
+    try {
+      const settings =
+        await Setting.findOneAndUpdate(
+          {},
+          req.body,
+          {
+            new: true,
+            upsert: true,
+            runValidators: true
+          }
+        );
+
+      return success(
+        res,
+        settings
       );
 
-    success(res, settings);
+    } catch (err) {
+      console.error(
+        "UPDATE SETTINGS ERROR:",
+        err
+      );
+
+      return error(
+        res,
+        "خطا در ذخیره تنظیمات",
+        500
+      );
+    }
   }
 );
 
-// 404
-app.use((req, res) => {
-  error(
-    res,
-    "API مورد نظر پیدا نشد",
-    404
-  );
-});
+/*
+==================================================
+ 404
+==================================================
+*/
 
-// ERROR
+app.use(
+  (req, res) => {
+    return error(
+      res,
+      "API مورد نظر پیدا نشد",
+      404
+    );
+  }
+);
+
+/*
+==================================================
+ GLOBAL ERROR HANDLER
+==================================================
+*/
+
 app.use(
   (err, req, res, next) => {
-    console.error(err);
 
-    if (err.code === 11000) {
+    console.error(
+      "GLOBAL ERROR:",
+      err
+    );
+
+    if (
+      err &&
+      err.code === 11000
+    ) {
       return error(
         res,
         "اطلاعات تکراری است",
@@ -1014,7 +2175,7 @@ app.use(
       );
     }
 
-    error(
+    return error(
       res,
       "خطای داخلی سرور",
       500
@@ -1022,28 +2183,79 @@ app.use(
   }
 );
 
-// START
-connectDatabase()
-  .then(() => {
-    const PORT =
-      Number(
-        process.env.PORT || 5000
-      );
+/*
+==================================================
+ DATABASE + SERVER START
+==================================================
+*/
 
+async function startServer() {
+
+  try {
+
+    console.log(
+      "======================================"
+    );
+
+    console.log(
+      "🚀 Starting Khayat-Yar Server..."
+    );
+
+    console.log(
+      "======================================"
+    );
+
+    // Connect MongoDB
+    await connectDatabase();
+
+    // Start Express
     app.listen(
       PORT,
+      "0.0.0.0",
       () => {
+
         console.log(
-          `🚀 Khayat-Yar API: http://localhost:${PORT}`
+          "======================================"
+        );
+
+        console.log(
+          "✅ Khayat-Yar Server Started"
+        );
+
+        console.log(
+          `🚀 Port: ${PORT}`
+        );
+
+        console.log(
+          "🌐 Server is ready"
+        );
+
+        console.log(
+          "======================================"
         );
       }
     );
-  })
-  .catch((err) => {
+
+  } catch (err) {
+
     console.error(
-      "❌ MongoDB connection failed:",
+      "======================================"
+    );
+
+    console.error(
+      "❌ SERVER START FAILED"
+    );
+
+    console.error(
       err.message
     );
 
+    console.error(
+      "======================================"
+    );
+
     process.exit(1);
-  });
+  }
+}
+
+startServer();
