@@ -2,464 +2,628 @@ const mongoose = require("mongoose");
 
 const { Schema } = mongoose;
 
-// USER
-const User = mongoose.model(
-  "User",
-  new Schema(
-    {
-      name: {
-        type: String,
-        required: true,
-        trim: true
-      },
+/* =========================================================
+   CUSTOMER
+========================================================= */
 
-      email: {
-        type: String,
-        lowercase: true,
-        trim: true,
-        sparse: true,
-        unique: true
-      },
-
-      phone: {
-        type: String,
-        trim: true,
-        sparse: true,
-        unique: true
-      },
-
-      passwordHash: {
-        type: String,
-        required: true,
-        select: false
-      },
-
-      role: {
-        type: String,
-        enum: ["admin", "manager", "tailor", "cashier"],
-        default: "cashier"
-      },
-
-      isActive: {
-        type: Boolean,
-        default: true
-      }
-    },
-    { timestamps: true }
-  )
-);
-
-// CUSTOMER
-const Customer = mongoose.model(
-  "Customer",
-  new Schema(
-    {
-      name: {
-        type: String,
-        required: true,
-        trim: true
-      },
-
-      phone: {
-        type: String,
-        required: true,
-        index: true
-      },
-
-      address: String,
-
-      notes: String,
-
-      customerType: {
-        type: String,
-        enum: ["normal", "vip", "special"],
-        default: "normal"
-      }
-    },
-    { timestamps: true }
-  )
-);
-
-// MEASUREMENT
-const Measurement = mongoose.model(
-  "Measurement",
-  new Schema(
-    {
-      customerId: {
-        type: Schema.Types.ObjectId,
-        ref: "Customer",
-        required: true,
-        index: true
-      },
-
-      title: {
-        type: String,
-        required: true
-      },
-
-      height: Number,
-      neck: Number,
-      chest: Number,
-      waist: Number,
-      hip: Number,
-      shoulder: Number,
-      arm: Number,
-      wrist: Number,
-      sleeve: Number,
-      shirtLength: Number,
-      pantsLength: Number,
-      thigh: Number,
-      knee: Number,
-      calf: Number,
-      inseam: Number,
-
-      notes: String
-    },
-    { timestamps: true }
-  )
-);
-
-// ORDER
-const Order = mongoose.model(
-  "Order",
-  new Schema(
-    {
-      orderNumber: {
-        type: String,
-        required: true,
-        unique: true,
-        index: true
-      },
-
-      customerId: {
-        type: Schema.Types.ObjectId,
-        ref: "Customer",
-        required: true,
-        index: true
-      },
-
-      measurementId: {
-        type: Schema.Types.ObjectId,
-        ref: "Measurement"
-      },
-
-      type: {
-        type: String,
-        required: true
-      },
-
-      description: String,
-
-      fabric: String,
-
-      color: String,
-
-      price: {
-        type: Number,
-        required: true,
-        min: 0
-      },
-
-      discount: {
-        type: Number,
-        default: 0,
-        min: 0
-      },
-
-      finalPrice: {
-        type: Number,
-        required: true,
-        min: 0
-      },
-
-      paidAmount: {
-        type: Number,
-        default: 0,
-        min: 0
-      },
-
-      remainingAmount: {
-        type: Number,
-        default: 0,
-        min: 0
-      },
-
-      deliveryDate: {
-        type: Date,
-        index: true
-      },
-
-      status: {
-        type: String,
-        enum: [
-          "registered",
-          "cutting",
-          "sewing",
-          "fitting",
-          "ready",
-          "delivered",
-          "cancelled"
-        ],
-        default: "registered",
-        index: true
-      },
-
-      assignedTailorId: {
-        type: Schema.Types.ObjectId,
-        ref: "User"
-      },
-
-      notes: String
-    },
-    { timestamps: true }
-  )
-);
-
-// PAYMENT
-const Payment = mongoose.model(
-  "Payment",
-  new Schema(
-    {
-      customerId: {
-        type: Schema.Types.ObjectId,
-        ref: "Customer",
-        required: true
-      },
-
-      orderId: {
-        type: Schema.Types.ObjectId,
-        ref: "Order",
-        required: true
-      },
-
-      amount: {
-        type: Number,
-        required: true,
-        min: 0.01
-      },
-
-      method: {
-        type: String,
-        enum: ["cash", "card", "bank", "other"],
-        required: true
-      },
-
-      note: String,
-
-      createdBy: {
-        type: Schema.Types.ObjectId,
-        ref: "User"
-      }
-    },
-    { timestamps: true }
-  )
-);
-
-// EXPENSE
-const Expense = mongoose.model(
-  "Expense",
-  new Schema(
-    {
-      title: {
-        type: String,
-        required: true
-      },
-
-      category: {
-        type: String,
-        enum: [
-          "fabric",
-          "thread",
-          "equipment",
-          "rent",
-          "electricity",
-          "water",
-          "salary",
-          "transport",
-          "other"
-        ],
-        required: true
-      },
-
-      amount: {
-        type: Number,
-        required: true,
-        min: 0
-      },
-
-      description: String,
-
-      createdBy: {
-        type: Schema.Types.ObjectId,
-        ref: "User"
-      }
-    },
-    { timestamps: true }
-  )
-);
-
-// INVENTORY
-const Inventory = mongoose.model(
-  "Inventory",
-  new Schema(
-    {
-      name: {
-        type: String,
-        required: true
-      },
-
-      type: {
-        type: String,
-        required: true
-      },
-
-      color: String,
-
-      quantity: {
-        type: Number,
-        required: true,
-        min: 0
-      },
-
-      unit: {
-        type: String,
-        default: "meter"
-      },
-
-      pricePerUnit: {
-        type: Number,
-        default: 0
-      },
-
-      supplier: String,
-
-      minimumStock: {
-        type: Number,
-        default: 0
-      }
-    },
-    { timestamps: true }
-  )
-);
-
-// INVOICE
-const Invoice = mongoose.model(
-  "Invoice",
-  new Schema(
-    {
-      invoiceNumber: {
-        type: String,
-        required: true,
-        unique: true
-      },
-
-      orderId: {
-        type: Schema.Types.ObjectId,
-        ref: "Order",
-        required: true
-      },
-
-      customerId: {
-        type: Schema.Types.ObjectId,
-        ref: "Customer",
-        required: true
-      },
-
-      subtotal: Number,
-      discount: Number,
-      total: Number,
-      paid: Number,
-      remaining: Number
-    },
-    { timestamps: true }
-  )
-);
-
-// EMPLOYEE
-const Employee = mongoose.model(
-  "Employee",
-  new Schema(
-    {
-      name: {
-        type: String,
-        required: true
-      },
-
-      phone: String,
-
-      position: {
-        type: String,
-        required: true
-      },
-
-      salary: {
-        type: Number,
-        default: 0
-      },
-
-      isActive: {
-        type: Boolean,
-        default: true
-      }
-    },
-    { timestamps: true }
-  )
-);
-
-// NOTIFICATION
-const Notification = mongoose.model(
-  "Notification",
-  new Schema(
-    {
-      userId: {
-        type: Schema.Types.ObjectId,
-        ref: "User"
-      },
-
+const customerSchema = new Schema(
+  {
+    name: {
       type: String,
-
-      title: String,
-
-      message: String,
-
-      read: {
-        type: Boolean,
-        default: false
-      }
+      required: true,
+      trim: true
     },
-    { timestamps: true }
-  )
+
+    phone: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    address: {
+      type: String,
+      default: ""
+    },
+
+    gender: {
+      type: String,
+      enum: ["male", "female"],
+      required: true
+    },
+
+    notes: {
+      type: String,
+      default: ""
+    }
+  },
+  {
+    timestamps: true
+  }
 );
 
-// SETTINGS
-const Setting = mongoose.model(
-  "Setting",
-  new Schema(
-    {
-      businessName: {
-        type: String,
-        required: true
-      },
 
-      phone: String,
+/* =========================================================
+   MEASUREMENTS
+========================================================= */
 
-      address: String,
+/*
+  اندازه‌های مردانه
+  مطابق فرم اندازه‌گیری مرد که فرستادی
+*/
 
-      currency: {
-        type: String,
-        default: "AFN"
-      },
-
-      logo: String,
-
-      invoiceFooter: String
-    },
-    { timestamps: true }
-  )
+const maleMeasurementSchema = new Schema(
+  {
+    qaddPirahan: { type: Number, default: null }, // قد پیراهن
+    shana: { type: Number, default: null },       // شانه
+    astin: { type: Number, default: null },       // آستین
+    baghal: { type: Number, default: null },      // بغل
+    kamar: { type: Number, default: null },       // کمر
+    balaTana: { type: Number, default: null },     // بالاتنه
+    sorin: { type: Number, default: null },       // سینه / سورین
+    qaddKarti: { type: Number, default: null },    // قد کرتی
+    qaddVest: { type: Number, default: null },     // قد واسکت
+    qaddDaman: { type: Number, default: null },    // قد دامن
+    qaddShalwar: { type: Number, default: null },  // قد شلوار
+    barDaman: { type: Number, default: null },     // بر دامن
+    pachah: { type: Number, default: null },       // پاچه
+    barYakhon: { type: Number, default: null },    // بر یخن
+    dehanAstin: { type: Number, default: null }    // دهن آستین
+  },
+  {
+    _id: false
+  }
 );
+
+
+/*
+  اندازه‌های زنانه
+  مطابق فرم اندازه‌گیری زن که فرستادی
+*/
+
+const femaleMeasurementSchema = new Schema(
+  {
+    qaddPirahan: { type: Number, default: null }, // قد پیراهن
+    shana: { type: Number, default: null },       // شانه
+    astin: { type: Number, default: null },       // آستین
+    baghal: { type: Number, default: null },      // بغل
+    kamar: { type: Number, default: null },       // کمر
+    balaTana: { type: Number, default: null },     // بالاتنه
+    sorin: { type: Number, default: null },       // سورین
+    qaddKarti: { type: Number, default: null },    // قد کرتی
+    qaddVest: { type: Number, default: null },     // قد واسکت
+    qaddDaman: { type: Number, default: null },    // قد دامن
+    qaddShalwar: { type: Number, default: null },  // قد شلوار
+    barDaman: { type: Number, default: null },     // بر دامن
+    pachah: { type: Number, default: null },       // پاچه
+    barYakhon: { type: Number, default: null },    // بر یخن
+    dehanAstin: { type: Number, default: null }    // دهن آستین
+  },
+  {
+    _id: false
+  }
+);
+
+
+/*
+  Measurement اصلی
+
+  اگر مشتری مرد باشد:
+  gender = male
+  male پر می‌شود
+
+  اگر مشتری زن باشد:
+  gender = female
+  female پر می‌شود
+*/
+
+const measurementSchema = new Schema(
+  {
+    customerId: {
+      type: Schema.Types.ObjectId,
+      ref: "Customer",
+      required: true
+    },
+
+    gender: {
+      type: String,
+      enum: ["male", "female"],
+      required: true
+    },
+
+    unit: {
+      type: String,
+      enum: ["cm", "inch"],
+      default: "cm"
+    },
+
+    male: {
+      type: maleMeasurementSchema,
+      default: undefined
+    },
+
+    female: {
+      type: femaleMeasurementSchema,
+      default: undefined
+    },
+
+    notes: {
+      type: String,
+      default: ""
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+
+/* =========================================================
+   ORDER
+========================================================= */
+
+const orderSchema = new Schema(
+  {
+    orderNumber: {
+      type: String,
+      required: true,
+      unique: true
+    },
+
+    customerId: {
+      type: Schema.Types.ObjectId,
+      ref: "Customer",
+      required: true
+    },
+
+    measurementId: {
+      type: Schema.Types.ObjectId,
+      ref: "Measurement"
+    },
+
+    description: {
+      type: String,
+      default: ""
+    },
+
+    status: {
+      type: String,
+      enum: [
+        "registered",
+        "cutting",
+        "sewing",
+        "fitting",
+        "ready",
+        "delivered",
+        "cancelled"
+      ],
+      default: "registered"
+    },
+
+    price: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
+    discount: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
+    finalPrice: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
+    paidAmount: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
+    remainingAmount: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
+    deliveryDate: {
+      type: Date
+    },
+
+    notes: {
+      type: String,
+      default: ""
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+
+/* =========================================================
+   PAYMENT
+========================================================= */
+
+const paymentSchema = new Schema(
+  {
+    customerId: {
+      type: Schema.Types.ObjectId,
+      ref: "Customer",
+      required: true
+    },
+
+    orderId: {
+      type: Schema.Types.ObjectId,
+      ref: "Order",
+      required: true
+    },
+
+    amount: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+
+    method: {
+      type: String,
+      enum: [
+        "cash",
+        "card",
+        "transfer",
+        "other"
+      ],
+      default: "cash"
+    },
+
+    note: {
+      type: String,
+      default: ""
+    },
+
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User"
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+
+/* =========================================================
+   EXPENSE
+========================================================= */
+
+const expenseSchema = new Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    amount: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+
+    category: {
+      type: String,
+      default: "other"
+    },
+
+    description: {
+      type: String,
+      default: ""
+    },
+
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User"
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+
+/* =========================================================
+   INVENTORY
+========================================================= */
+
+const inventorySchema = new Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    category: {
+      type: String,
+      default: "other"
+    },
+
+    quantity: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
+    unit: {
+      type: String,
+      default: "عدد"
+    },
+
+    minimumStock: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
+    price: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+
+    notes: {
+      type: String,
+      default: ""
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+
+/* =========================================================
+   INVOICE
+========================================================= */
+
+const invoiceSchema = new Schema(
+  {
+    invoiceNumber: {
+      type: String,
+      required: true,
+      unique: true
+    },
+
+    orderId: {
+      type: Schema.Types.ObjectId,
+      ref: "Order",
+      required: true
+    },
+
+    customerId: {
+      type: Schema.Types.ObjectId,
+      ref: "Customer",
+      required: true
+    },
+
+    subtotal: {
+      type: Number,
+      default: 0
+    },
+
+    discount: {
+      type: Number,
+      default: 0
+    },
+
+    total: {
+      type: Number,
+      default: 0
+    },
+
+    paid: {
+      type: Number,
+      default: 0
+    },
+
+    remaining: {
+      type: Number,
+      default: 0
+    },
+
+    notes: {
+      type: String,
+      default: ""
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+
+/* =========================================================
+   EMPLOYEE
+========================================================= */
+
+const employeeSchema = new Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    phone: {
+      type: String,
+      default: ""
+    },
+
+    position: {
+      type: String,
+      default: ""
+    },
+
+    salary: {
+      type: Number,
+      default: 0
+    },
+
+    status: {
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active"
+    },
+
+    notes: {
+      type: String,
+      default: ""
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+
+/* =========================================================
+   NOTIFICATION
+========================================================= */
+
+const notificationSchema = new Schema(
+  {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
+
+    title: {
+      type: String,
+      required: true
+    },
+
+    message: {
+      type: String,
+      required: true
+    },
+
+    type: {
+      type: String,
+      default: "info"
+    },
+
+    read: {
+      type: Boolean,
+      default: false
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+const settingSchema = new Schema(
+  {
+    shopName: {
+      type: String,
+      default: "خیاط‌یار"
+    },
+
+    ownerName: {
+      type: String,
+      default: ""
+    },
+
+    phone: {
+      type: String,
+      default: ""
+    },
+
+    address: {
+      type: String,
+      default: ""
+    },
+
+    currency: {
+      type: String,
+      default: "AFN"
+    },
+
+    logo: {
+      type: String,
+      default: ""
+    },
+
+    invoiceFooter: {
+      type: String,
+      default: ""
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+
+/* =========================================================
+   EXPORT MODELS
+========================================================= */
+
+const Customer =
+  mongoose.models.Customer ||
+  mongoose.model("Customer", customerSchema);
+
+const Measurement =
+  mongoose.models.Measurement ||
+  mongoose.model("Measurement", measurementSchema);
+
+const Order =
+  mongoose.models.Order ||
+  mongoose.model("Order", orderSchema);
+
+const Payment =
+  mongoose.models.Payment ||
+  mongoose.model("Payment", paymentSchema);
+
+const Expense =
+  mongoose.models.Expense ||
+  mongoose.model("Expense", expenseSchema);
+
+const Inventory =
+  mongoose.models.Inventory ||
+  mongoose.model("Inventory", inventorySchema);
+
+const Invoice =
+  mongoose.models.Invoice ||
+  mongoose.model("Invoice", invoiceSchema);
+
+const Employee =
+  mongoose.models.Employee ||
+  mongoose.model("Employee", employeeSchema);
+
+const Notification =
+  mongoose.models.Notification ||
+  mongoose.model("Notification", notificationSchema);
+
+const Setting =
+  mongoose.models.Setting ||
+  mongoose.model("Setting", settingSchema);
+
+
+/* =========================================================
+   EXPORT
+========================================================= */
 
 module.exports = {
-  User,
   Customer,
   Measurement,
   Order,
