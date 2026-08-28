@@ -3,6 +3,56 @@ const mongoose = require("mongoose");
 const { Schema } = mongoose;
 
 /* =========================================================
+   USER
+========================================================= */
+
+const userSchema = new Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      sparse: true,
+      unique: true
+    },
+
+    phone: {
+      type: String,
+      trim: true,
+      sparse: true,
+      unique: true
+    },
+
+    passwordHash: {
+      type: String,
+      required: true,
+      select: false
+    },
+
+    role: {
+      type: String,
+      enum: ["admin", "manager", "employee"],
+      default: "admin"
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+
+/* =========================================================
    CUSTOMER
 ========================================================= */
 
@@ -20,6 +70,12 @@ const customerSchema = new Schema(
       trim: true
     },
 
+    customerCode: {
+      type: String,
+      trim: true,
+      default: ""
+    },
+
     address: {
       type: String,
       default: ""
@@ -34,6 +90,11 @@ const customerSchema = new Schema(
     notes: {
       type: String,
       default: ""
+    },
+
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User"
     }
   },
   {
@@ -43,31 +104,85 @@ const customerSchema = new Schema(
 
 
 /* =========================================================
-   MEASUREMENTS
+   MALE MEASUREMENTS
 ========================================================= */
-
-/*
-  اندازه‌های مردانه
-  مطابق فرم اندازه‌گیری مرد که فرستادی
-*/
 
 const maleMeasurementSchema = new Schema(
   {
-    qaddPirahan: { type: Number, default: null }, // قد پیراهن
-    shana: { type: Number, default: null },       // شانه
-    astin: { type: Number, default: null },       // آستین
-    baghal: { type: Number, default: null },      // بغل
-    kamar: { type: Number, default: null },       // کمر
-    balaTana: { type: Number, default: null },     // بالاتنه
-    sorin: { type: Number, default: null },       // سینه / سورین
-    qaddKarti: { type: Number, default: null },    // قد کرتی
-    qaddVest: { type: Number, default: null },     // قد واسکت
-    qaddDaman: { type: Number, default: null },    // قد دامن
-    qaddShalwar: { type: Number, default: null },  // قد شلوار
-    barDaman: { type: Number, default: null },     // بر دامن
-    pachah: { type: Number, default: null },       // پاچه
-    barYakhon: { type: Number, default: null },    // بر یخن
-    dehanAstin: { type: Number, default: null }    // دهن آستین
+    qaddPirahan: {
+      type: Number,
+      default: null
+    },
+
+    shana: {
+      type: Number,
+      default: null
+    },
+
+    astin: {
+      type: Number,
+      default: null
+    },
+
+    baghal: {
+      type: Number,
+      default: null
+    },
+
+    kamar: {
+      type: Number,
+      default: null
+    },
+
+    balaTana: {
+      type: Number,
+      default: null
+    },
+
+    sorin: {
+      type: Number,
+      default: null
+    },
+
+    qaddKarti: {
+      type: Number,
+      default: null
+    },
+
+    qaddVest: {
+      type: Number,
+      default: null
+    },
+
+    qaddDaman: {
+      type: Number,
+      default: null
+    },
+
+    qaddShalwar: {
+      type: Number,
+      default: null
+    },
+
+    barDaman: {
+      type: Number,
+      default: null
+    },
+
+    pachah: {
+      type: Number,
+      default: null
+    },
+
+    barYakhon: {
+      type: Number,
+      default: null
+    },
+
+    dehanAstin: {
+      type: Number,
+      default: null
+    }
   },
   {
     _id: false
@@ -75,28 +190,86 @@ const maleMeasurementSchema = new Schema(
 );
 
 
-/*
-  اندازه‌های زنانه
-  مطابق فرم اندازه‌گیری زن که فرستادی
-*/
+/* =========================================================
+   FEMALE MEASUREMENTS
+========================================================= */
 
 const femaleMeasurementSchema = new Schema(
   {
-    qaddPirahan: { type: Number, default: null }, // قد پیراهن
-    shana: { type: Number, default: null },       // شانه
-    astin: { type: Number, default: null },       // آستین
-    baghal: { type: Number, default: null },      // بغل
-    kamar: { type: Number, default: null },       // کمر
-    balaTana: { type: Number, default: null },     // بالاتنه
-    sorin: { type: Number, default: null },       // سورین
-    qaddKarti: { type: Number, default: null },    // قد کرتی
-    qaddVest: { type: Number, default: null },     // قد واسکت
-    qaddDaman: { type: Number, default: null },    // قد دامن
-    qaddShalwar: { type: Number, default: null },  // قد شلوار
-    barDaman: { type: Number, default: null },     // بر دامن
-    pachah: { type: Number, default: null },       // پاچه
-    barYakhon: { type: Number, default: null },    // بر یخن
-    dehanAstin: { type: Number, default: null }    // دهن آستین
+    qaddPirahan: {
+      type: Number,
+      default: null
+    },
+
+    shana: {
+      type: Number,
+      default: null
+    },
+
+    astin: {
+      type: Number,
+      default: null
+    },
+
+    baghal: {
+      type: Number,
+      default: null
+    },
+
+    kamar: {
+      type: Number,
+      default: null
+    },
+
+    balaTana: {
+      type: Number,
+      default: null
+    },
+
+    sorin: {
+      type: Number,
+      default: null
+    },
+
+    qaddKarti: {
+      type: Number,
+      default: null
+    },
+
+    qaddVest: {
+      type: Number,
+      default: null
+    },
+
+    qaddDaman: {
+      type: Number,
+      default: null
+    },
+
+    qaddShalwar: {
+      type: Number,
+      default: null
+    },
+
+    barDaman: {
+      type: Number,
+      default: null
+    },
+
+    pachah: {
+      type: Number,
+      default: null
+    },
+
+    barYakhon: {
+      type: Number,
+      default: null
+    },
+
+    dehanAstin: {
+      type: Number,
+      default: null
+    }
   },
   {
     _id: false
@@ -104,24 +277,17 @@ const femaleMeasurementSchema = new Schema(
 );
 
 
-/*
-  Measurement اصلی
-
-  اگر مشتری مرد باشد:
-  gender = male
-  male پر می‌شود
-
-  اگر مشتری زن باشد:
-  gender = female
-  female پر می‌شود
-*/
+/* =========================================================
+   MEASUREMENT
+========================================================= */
 
 const measurementSchema = new Schema(
   {
     customerId: {
       type: Schema.Types.ObjectId,
       ref: "Customer",
-      required: true
+      required: true,
+      index: true
     },
 
     gender: {
@@ -149,6 +315,11 @@ const measurementSchema = new Schema(
     notes: {
       type: String,
       default: ""
+    },
+
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User"
     }
   },
   {
@@ -166,18 +337,28 @@ const orderSchema = new Schema(
     orderNumber: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
+      trim: true,
+      index: true
     },
 
     customerId: {
       type: Schema.Types.ObjectId,
       ref: "Customer",
-      required: true
+      required: true,
+      index: true
     },
 
     measurementId: {
       type: Schema.Types.ObjectId,
-      ref: "Measurement"
+      ref: "Measurement",
+      default: null
+    },
+
+    title: {
+      type: String,
+      default: "",
+      trim: true
     },
 
     description: {
@@ -196,7 +377,8 @@ const orderSchema = new Schema(
         "delivered",
         "cancelled"
       ],
-      default: "registered"
+      default: "registered",
+      index: true
     },
 
     price: {
@@ -230,12 +412,18 @@ const orderSchema = new Schema(
     },
 
     deliveryDate: {
-      type: Date
+      type: Date,
+      default: null
     },
 
     notes: {
       type: String,
       default: ""
+    },
+
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User"
     }
   },
   {
@@ -253,13 +441,15 @@ const paymentSchema = new Schema(
     customerId: {
       type: Schema.Types.ObjectId,
       ref: "Customer",
-      required: true
+      required: true,
+      index: true
     },
 
     orderId: {
       type: Schema.Types.ObjectId,
       ref: "Order",
-      required: true
+      required: true,
+      index: true
     },
 
     amount: {
@@ -315,7 +505,13 @@ const expenseSchema = new Schema(
 
     category: {
       type: String,
-      default: "other"
+      default: "other",
+      trim: true
+    },
+
+    date: {
+      type: Date,
+      default: Date.now
     },
 
     description: {
@@ -348,7 +544,8 @@ const inventorySchema = new Schema(
 
     category: {
       type: String,
-      default: "other"
+      default: "other",
+      trim: true
     },
 
     quantity: {
@@ -359,7 +556,8 @@ const inventorySchema = new Schema(
 
     unit: {
       type: String,
-      default: "عدد"
+      default: "عدد",
+      trim: true
     },
 
     minimumStock: {
@@ -377,6 +575,11 @@ const inventorySchema = new Schema(
     notes: {
       type: String,
       default: ""
+    },
+
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User"
     }
   },
   {
@@ -394,49 +597,63 @@ const invoiceSchema = new Schema(
     invoiceNumber: {
       type: String,
       required: true,
-      unique: true
+      unique: true,
+      trim: true,
+      index: true
     },
 
     orderId: {
       type: Schema.Types.ObjectId,
       ref: "Order",
-      required: true
+      required: true,
+      index: true
     },
 
     customerId: {
       type: Schema.Types.ObjectId,
       ref: "Customer",
-      required: true
+      required: true,
+      index: true
     },
 
     subtotal: {
       type: Number,
-      default: 0
+      default: 0,
+      min: 0
     },
 
     discount: {
       type: Number,
-      default: 0
+      default: 0,
+      min: 0
     },
 
     total: {
       type: Number,
-      default: 0
+      default: 0,
+      min: 0
     },
 
     paid: {
       type: Number,
-      default: 0
+      default: 0,
+      min: 0
     },
 
     remaining: {
       type: Number,
-      default: 0
+      default: 0,
+      min: 0
     },
 
     notes: {
       type: String,
       default: ""
+    },
+
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User"
     }
   },
   {
@@ -459,17 +676,20 @@ const employeeSchema = new Schema(
 
     phone: {
       type: String,
-      default: ""
+      default: "",
+      trim: true
     },
 
     position: {
       type: String,
-      default: ""
+      default: "",
+      trim: true
     },
 
     salary: {
       type: Number,
-      default: 0
+      default: 0,
+      min: 0
     },
 
     status: {
@@ -481,6 +701,11 @@ const employeeSchema = new Schema(
     notes: {
       type: String,
       default: ""
+    },
+
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User"
     }
   },
   {
@@ -498,12 +723,14 @@ const notificationSchema = new Schema(
     userId: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
+      index: true
     },
 
     title: {
       type: String,
-      required: true
+      required: true,
+      trim: true
     },
 
     message: {
@@ -535,17 +762,20 @@ const settingSchema = new Schema(
   {
     shopName: {
       type: String,
-      default: "خیاط‌یار"
+      default: "خیاط‌یار",
+      trim: true
     },
 
     ownerName: {
       type: String,
-      default: ""
+      default: "",
+      trim: true
     },
 
     phone: {
       type: String,
-      default: ""
+      default: "",
+      trim: true
     },
 
     address: {
@@ -566,6 +796,16 @@ const settingSchema = new Schema(
     invoiceFooter: {
       type: String,
       default: ""
+    },
+
+    description: {
+      type: String,
+      default: ""
+    },
+
+    updatedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User"
     }
   },
   {
@@ -575,8 +815,12 @@ const settingSchema = new Schema(
 
 
 /* =========================================================
-   EXPORT MODELS
+   MODELS
 ========================================================= */
+
+const User =
+  mongoose.models.User ||
+  mongoose.model("User", userSchema);
 
 const Customer =
   mongoose.models.Customer ||
@@ -624,6 +868,7 @@ const Setting =
 ========================================================= */
 
 module.exports = {
+  User,
   Customer,
   Measurement,
   Order,
