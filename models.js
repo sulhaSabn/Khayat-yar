@@ -18,15 +18,15 @@ const userSchema = new Schema(
       type: String,
       trim: true,
       lowercase: true,
-      sparse: true,
-      unique: true
+      unique: true,
+      sparse: true
     },
 
     phone: {
       type: String,
       trim: true,
-      sparse: true,
-      unique: true
+      unique: true,
+      sparse: true
     },
 
     passwordHash: {
@@ -73,7 +73,8 @@ const customerSchema = new Schema(
     customerCode: {
       type: String,
       trim: true,
-      default: ""
+      unique: true,
+      sparse: true
     },
 
     address: {
@@ -104,182 +105,102 @@ const customerSchema = new Schema(
 
 
 /* =========================================================
-   MALE MEASUREMENTS
-========================================================= */
-
-const maleMeasurementSchema = new Schema(
-  {
-    qaddPirahan: {
-      type: Number,
-      default: null
-    },
-
-    shana: {
-      type: Number,
-      default: null
-    },
-
-    astin: {
-      type: Number,
-      default: null
-    },
-
-    baghal: {
-      type: Number,
-      default: null
-    },
-
-    kamar: {
-      type: Number,
-      default: null
-    },
-
-    balaTana: {
-      type: Number,
-      default: null
-    },
-
-    sorin: {
-      type: Number,
-      default: null
-    },
-
-    qaddKarti: {
-      type: Number,
-      default: null
-    },
-
-    qaddVest: {
-      type: Number,
-      default: null
-    },
-
-    qaddDaman: {
-      type: Number,
-      default: null
-    },
-
-    qaddShalwar: {
-      type: Number,
-      default: null
-    },
-
-    barDaman: {
-      type: Number,
-      default: null
-    },
-
-    pachah: {
-      type: Number,
-      default: null
-    },
-
-    barYakhon: {
-      type: Number,
-      default: null
-    },
-
-    dehanAstin: {
-      type: Number,
-      default: null
-    }
-  },
-  {
-    _id: false
-  }
-);
-
-
-/* =========================================================
-   FEMALE MEASUREMENTS
-========================================================= */
-
-const femaleMeasurementSchema = new Schema(
-  {
-    qaddPirahan: {
-      type: Number,
-      default: null
-    },
-
-    shana: {
-      type: Number,
-      default: null
-    },
-
-    astin: {
-      type: Number,
-      default: null
-    },
-
-    baghal: {
-      type: Number,
-      default: null
-    },
-
-    kamar: {
-      type: Number,
-      default: null
-    },
-
-    balaTana: {
-      type: Number,
-      default: null
-    },
-
-    sorin: {
-      type: Number,
-      default: null
-    },
-
-    qaddKarti: {
-      type: Number,
-      default: null
-    },
-
-    qaddVest: {
-      type: Number,
-      default: null
-    },
-
-    qaddDaman: {
-      type: Number,
-      default: null
-    },
-
-    qaddShalwar: {
-      type: Number,
-      default: null
-    },
-
-    barDaman: {
-      type: Number,
-      default: null
-    },
-
-    pachah: {
-      type: Number,
-      default: null
-    },
-
-    barYakhon: {
-      type: Number,
-      default: null
-    },
-
-    dehanAstin: {
-      type: Number,
-      default: null
-    }
-  },
-  {
-    _id: false
-  }
-);
-
-
-/* =========================================================
    MEASUREMENT
 ========================================================= */
+
+const measurementFields = {
+  qaddPirahan: {
+    type: Number,
+    default: null
+  },
+
+  shana: {
+    type: Number,
+    default: null
+  },
+
+  astin: {
+    type: Number,
+    default: null
+  },
+
+  baghal: {
+    type: Number,
+    default: null
+  },
+
+  kamar: {
+    type: Number,
+    default: null
+  },
+
+  balaTana: {
+    type: Number,
+    default: null
+  },
+
+  sorin: {
+    type: Number,
+    default: null
+  },
+
+  qaddKarti: {
+    type: Number,
+    default: null
+  },
+
+  qaddVest: {
+    type: Number,
+    default: null
+  },
+
+  qaddDaman: {
+    type: Number,
+    default: null
+  },
+
+  qaddShalwar: {
+    type: Number,
+    default: null
+  },
+
+  barDaman: {
+    type: Number,
+    default: null
+  },
+
+  pachah: {
+    type: Number,
+    default: null
+  },
+
+  barYakhon: {
+    type: Number,
+    default: null
+  },
+
+  dehanAstin: {
+    type: Number,
+    default: null
+  }
+};
+
+
+const maleMeasurementSchema = new Schema(
+  measurementFields,
+  {
+    _id: false
+  }
+);
+
+
+const femaleMeasurementSchema = new Schema(
+  measurementFields,
+  {
+    _id: false
+  }
+);
+
 
 const measurementSchema = new Schema(
   {
@@ -337,28 +258,23 @@ const orderSchema = new Schema(
     orderNumber: {
       type: String,
       required: true,
-      unique: true,
-      trim: true,
-      index: true
+      unique: true
     },
 
     customerId: {
       type: Schema.Types.ObjectId,
       ref: "Customer",
-      required: true,
-      index: true
+      required: true
     },
 
     measurementId: {
       type: Schema.Types.ObjectId,
-      ref: "Measurement",
-      default: null
+      ref: "Measurement"
     },
 
     title: {
       type: String,
-      default: "",
-      trim: true
+      default: ""
     },
 
     description: {
@@ -377,8 +293,7 @@ const orderSchema = new Schema(
         "delivered",
         "cancelled"
       ],
-      default: "registered",
-      index: true
+      default: "registered"
     },
 
     price: {
@@ -412,8 +327,7 @@ const orderSchema = new Schema(
     },
 
     deliveryDate: {
-      type: Date,
-      default: null
+      type: Date
     },
 
     notes: {
@@ -441,15 +355,13 @@ const paymentSchema = new Schema(
     customerId: {
       type: Schema.Types.ObjectId,
       ref: "Customer",
-      required: true,
-      index: true
+      required: true
     },
 
     orderId: {
       type: Schema.Types.ObjectId,
       ref: "Order",
-      required: true,
-      index: true
+      required: true
     },
 
     amount: {
@@ -505,13 +417,7 @@ const expenseSchema = new Schema(
 
     category: {
       type: String,
-      default: "other",
-      trim: true
-    },
-
-    date: {
-      type: Date,
-      default: Date.now
+      default: "other"
     },
 
     description: {
@@ -544,8 +450,7 @@ const inventorySchema = new Schema(
 
     category: {
       type: String,
-      default: "other",
-      trim: true
+      default: "other"
     },
 
     quantity: {
@@ -556,8 +461,7 @@ const inventorySchema = new Schema(
 
     unit: {
       type: String,
-      default: "عدد",
-      trim: true
+      default: "عدد"
     },
 
     minimumStock: {
@@ -597,53 +501,44 @@ const invoiceSchema = new Schema(
     invoiceNumber: {
       type: String,
       required: true,
-      unique: true,
-      trim: true,
-      index: true
+      unique: true
     },
 
     orderId: {
       type: Schema.Types.ObjectId,
       ref: "Order",
-      required: true,
-      index: true
+      required: true
     },
 
     customerId: {
       type: Schema.Types.ObjectId,
       ref: "Customer",
-      required: true,
-      index: true
+      required: true
     },
 
     subtotal: {
       type: Number,
-      default: 0,
-      min: 0
+      default: 0
     },
 
     discount: {
       type: Number,
-      default: 0,
-      min: 0
+      default: 0
     },
 
     total: {
       type: Number,
-      default: 0,
-      min: 0
+      default: 0
     },
 
     paid: {
       type: Number,
-      default: 0,
-      min: 0
+      default: 0
     },
 
     remaining: {
       type: Number,
-      default: 0,
-      min: 0
+      default: 0
     },
 
     notes: {
@@ -676,20 +571,22 @@ const employeeSchema = new Schema(
 
     phone: {
       type: String,
-      default: "",
-      trim: true
+      default: ""
+    },
+
+    role: {
+      type: String,
+      default: ""
     },
 
     position: {
       type: String,
-      default: "",
-      trim: true
+      default: ""
     },
 
     salary: {
       type: Number,
-      default: 0,
-      min: 0
+      default: 0
     },
 
     status: {
@@ -723,14 +620,12 @@ const notificationSchema = new Schema(
     userId: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true,
-      index: true
+      required: true
     },
 
     title: {
       type: String,
-      required: true,
-      trim: true
+      required: true
     },
 
     message: {
@@ -762,20 +657,22 @@ const settingSchema = new Schema(
   {
     shopName: {
       type: String,
-      default: "خیاط‌یار",
-      trim: true
+      default: "خیاط‌یار"
     },
 
     ownerName: {
       type: String,
-      default: "",
-      trim: true
+      default: ""
+    },
+
+    name: {
+      type: String,
+      default: ""
     },
 
     phone: {
       type: String,
-      default: "",
-      trim: true
+      default: ""
     },
 
     address: {
@@ -801,11 +698,6 @@ const settingSchema = new Schema(
     description: {
       type: String,
       default: ""
-    },
-
-    updatedBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User"
     }
   },
   {
