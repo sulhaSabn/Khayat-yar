@@ -2,23 +2,17 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { User } = require("./models");
 
+const JWT_SECRET =
+  "KHAYAT_YAR_SECRET_2026_CHANGE_THIS_TO_A_LONG_RANDOM_SECRET";
 
-/* =========================================================
-   JWT
-========================================================= */
 
 function createToken(user) {
-
-  if (!process.env.JWT_SECRET) {
-    throw new Error("JWT_SECRET is not configured");
-  }
-
   return jwt.sign(
     {
       id: user._id.toString(),
       role: user.role
     },
-    process.env.JWT_SECRET,
+    JWT_SECRET,
     {
       expiresIn: "7d"
     }
@@ -26,12 +20,7 @@ function createToken(user) {
 }
 
 
-/* =========================================================
-   SAFE USER
-========================================================= */
-
 function safeUser(user) {
-
   return {
     id: user._id,
     name: user.name,
@@ -43,123 +32,103 @@ function safeUser(user) {
 }
 
 
-/* =========================================================
-   REGISTER
-========================================================= */
+// =====================================================
+// REGISTER
+// =====================================================
 
 async function register(req, res) {
-
   try {
 
-    let {
+    const {
       name,
       email,
       phone,
       password,
       role = "admin"
-    } = req.body || {};
+    } = req.body;
 
-    name = String(name || "").trim();
-    email = String(email || "").trim().toLowerCase();
-    phone = String(phone || "").trim();
-    password = String(password || "");
-
-    if (!name || !password || (!email && !phone)) {
-
+    if (!name || !password) {
       return res.status(400).json({
         success: false,
-        message:
-          "نام، رمز عبور و ایمیل یا شماره تلفن الزامی است"
+        message: "نام و رمز عبور الزامی است"
       });
+    }
 
+    if (!email && !phone) {
+      return res.status(400).json({
+        success: false,
+        message: "ایمیل یا شماره تلفن الزامی است"
+      });
     }
 
     if (password.length < 8) {
-
       return res.status(400).json({
         success: false,
-        message:
-          "رمز عبور باید حداقل ۸ کاراکتر باشد"
+        message: "رمز عبور باید حداقل ۸ کاراکتر باشد"
       });
-
     }
-
-    if (!["admin", "manager", "employee"].includes(role)) {
-      role = "admin";
-    }
-
-
-    /* بررسی کاربر تکراری */
 
     const conditions = [];
 
     if (email) {
       conditions.push({
-        email
+        email: email.toLowerCase().trim()
       });
     }
 
     if (phone) {
       conditions.push({
-        phone
+        phone: phone.trim()
       });
     }
 
-    const exists = conditions.length
-      ? await User.findOne({ $or: conditions })
-      : null;
-
+    const exists =
+      await User.findOne({
+        $or: conditions
+      });
 
     if (exists) {
-
       return res.status(409).json({
         success: false,
-        message:
-          "این کاربر قبلاً ثبت شده است"
+        message: "این ایمیل یا شماره تلفن قبلاً ثبت شده است"
       });
-
     }
-
-
-    /* رمزگذاری */
 
     const passwordHash =
       await bcrypt.hash(password, 12);
 
+    const user =
+      await User.create({
+        name: name.trim(),
 
-    /* ساخت کاربر */
+        email: email
+          ? email.toLowerCase().trim()
+          : undefined,
 
-    const user = await User.create({
+        phone: phone
+          ? phone.trim()
+          : undefined,
 
-      name,
+        passwordHash,
 
-      email: email || undefined,
+        role: [
+          "admin",
+          "manager",
+          "employee"
+        ].includes(role)
+          ? role
+          : "admin"
+      });
 
-      phone: phone || undefined,
-
-      passwordHash,
-
-      role,
-
-      isActive: true
-
-    });
-
-
-    const token = createToken(user);
-
+    const token =
+      createToken(user);
 
     return res.status(201).json({
-
       success: true,
-
-      message: "ثبت‌نام با موفقیت انجام شد",
-
       data: {
         token,
         user: safeUser(user)
       }
-
     });
 
   } catch (error) {
@@ -170,129 +139,89 @@ async function register(req, res) {
     );
 
     if (error.code === 11000) {
-
       return res.status(409).json({
         success: false,
-        message:
-          "ایمیل یا شماره تلفن قبلاً ثبت شده است"
+        message: "ایمیل یا شماره تلفن قبلاً ثبت شده است"
       });
-
     }
 
     return res.status(500).json({
       success: false,
       message: "خطا در ثبت‌نام"
     });
-
   }
-
 }
 
 
-/* =========================================================
-   LOGIN
-========================================================= */
+// =====================================================
+// LOGIN
+// =====================================================
 
 async function login(req, res) {
-
   try {
 
-    const body = req.body || {};
-
-    /*
-      فرانت‌اند فعلی شما phone می‌فرستد.
-      نسخه جدید identifier، phone و email را قبول می‌کند.
-    */
-
-    const identifier = String(
-      body.identifier ||
-      body.phone ||
-      body.email ||
-      ""
-    ).trim();
-
-    const password = String(
-      body.password || ""
-    );
-
+    const {
+      identifier,
+      password
+    } = req.body;
 
     if (!identifier || !password) {
-
       return res.status(400).json({
         success: false,
-        message:
-          "اطلاعات ورود کامل نیست"
+        message: "ایمیل/شماره تلفن و رمز عبور الزامی است"
       });
-
     }
 
+    const value =
+      identifier.trim();
 
-    const normalized =
-      identifier.toLowerCase();
+    const conditions = [
+      {
+        email: value.toLowerCase()
+      },
+      {
+        phone: value
+      }
+    ];
 
+    const user =
+      await User.findOne({
+        $or: conditions
+      }).select("+passwordHash");
 
-    const user = await User.findOne({
-
-      $or: [
-        {
-          email: normalized
-        },
-        {
-          phone: identifier
-        }
-      ]
-
-    }).select("+passwordHash");
-
-
-    if (
-      !user ||
-      !user.isActive ||
-      !user.passwordHash
-    ) {
-
+    if (!user) {
       return res.status(401).json({
         success: false,
-        message:
-          "نام کاربری یا رمز عبور اشتباه است"
+        message: "کاربر پیدا نشد"
       });
-
     }
 
+    if (!user.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: "حساب کاربری غیرفعال است"
+      });
+    }
 
-    const passwordOK =
+    const correct =
       await bcrypt.compare(
         password,
         user.passwordHash
       );
 
-
-    if (!passwordOK) {
-
+    if (!correct) {
       return res.status(401).json({
         success: false,
-        message:
-          "نام کاربری یا رمز عبور اشتباه است"
+        message: "رمز عبور اشتباه است"
       });
-
     }
 
-
-    const token =
-      createToken(user);
-
-
     return res.json({
-
       success: true,
-
-      message: "ورود موفق بود",
-
       data: {
-        token,
+        token: createToken(user),
         user: safeUser(user)
       }
-
     });
 
   } catch (error) {
@@ -306,62 +235,48 @@ async function login(req, res) {
       success: false,
       message: "خطا در ورود"
     });
-
   }
-
 }
 
 
-/* =========================================================
-   ME
-========================================================= */
+// =====================================================
+// ME
+// =====================================================
 
 async function me(req, res) {
 
   try {
 
     const user =
-      await User.findById(req.user.id);
-
+      await User.findById(
+        req.user.id
+      );
 
     if (!user) {
-
       return res.status(404).json({
         success: false,
         message: "کاربر پیدا نشد"
       });
-
     }
 
-
     return res.json({
-
       success: true,
-
       data: safeUser(user)
-
     });
 
   } catch (error) {
 
-    console.error(
-      "ME ERROR:",
-      error
-    );
-
     return res.status(500).json({
       success: false,
-      message: "خطا در دریافت اطلاعات کاربر"
+      message: "خطا در دریافت حساب"
     });
-
   }
-
 }
 
 
-/* =========================================================
-   AUTH MIDDLEWARE
-========================================================= */
+// =====================================================
+// AUTH MIDDLEWARE
+// =====================================================
 
 function authRequired(req, res, next) {
 
@@ -370,54 +285,21 @@ function authRequired(req, res, next) {
     const header =
       req.headers.authorization || "";
 
-
     if (!header.startsWith("Bearer ")) {
-
       return res.status(401).json({
         success: false,
-        message:
-          "ابتدا وارد حساب شوید"
+        message: "ابتدا وارد حساب شوید"
       });
-
     }
-
 
     const token =
-      header.substring(7).trim();
-
-
-    if (!token) {
-
-      return res.status(401).json({
-        success: false,
-        message:
-          "توکن ارسال نشده است"
-      });
-
-    }
-
-
-    if (!process.env.JWT_SECRET) {
-
-      console.error(
-        "JWT_SECRET is missing"
-      );
-
-      return res.status(500).json({
-        success: false,
-        message:
-          "JWT_SECRET در سرور تنظیم نشده است"
-      });
-
-    }
-
+      header.substring(7);
 
     const decoded =
       jwt.verify(
         token,
-        process.env.JWT_SECRET
+        JWT_SECRET
       );
-
 
     req.user = decoded;
 
@@ -427,18 +309,15 @@ function authRequired(req, res, next) {
 
     return res.status(401).json({
       success: false,
-      message:
-        "توکن نامعتبر یا منقضی شده است"
+      message: "توکن نامعتبر یا منقضی شده است"
     });
-
   }
-
 }
 
 
-/* =========================================================
-   ROLES
-========================================================= */
+// =====================================================
+// ROLES
+// =====================================================
 
 function roles(...allowedRoles) {
 
@@ -446,35 +325,25 @@ function roles(...allowedRoles) {
 
     if (
       !req.user ||
-      !allowedRoles.includes(req.user.role)
+      !allowedRoles.includes(
+        req.user.role
+      )
     ) {
-
       return res.status(403).json({
         success: false,
-        message:
-          "شما اجازه انجام این کار را ندارید"
+        message: "شما اجازه انجام این کار را ندارید"
       });
-
     }
 
     next();
-
   };
-
 }
 
 
-/* =========================================================
-   EXPORT
-========================================================= */
-
 module.exports = {
-
   register,
   login,
   me,
   authRequired,
-  roles,
-  createToken
-
+  roles
 };
