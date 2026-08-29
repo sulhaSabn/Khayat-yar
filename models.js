@@ -2,9 +2,9 @@ const mongoose = require("mongoose");
 
 const { Schema } = mongoose;
 
-/* =========================================================
-   USER
-========================================================= */
+// =====================================================
+// USER
+// =====================================================
 
 const userSchema = new Schema(
   {
@@ -16,17 +16,17 @@ const userSchema = new Schema(
 
     email: {
       type: String,
-      trim: true,
-      lowercase: true,
       unique: true,
-      sparse: true
+      sparse: true,
+      lowercase: true,
+      trim: true
     },
 
     phone: {
       type: String,
-      trim: true,
       unique: true,
-      sparse: true
+      sparse: true,
+      trim: true
     },
 
     passwordHash: {
@@ -52,9 +52,9 @@ const userSchema = new Schema(
 );
 
 
-/* =========================================================
-   CUSTOMER
-========================================================= */
+// =====================================================
+// CUSTOMER
+// =====================================================
 
 const customerSchema = new Schema(
   {
@@ -68,13 +68,6 @@ const customerSchema = new Schema(
       type: String,
       required: true,
       trim: true
-    },
-
-    customerCode: {
-      type: String,
-      trim: true,
-      unique: true,
-      sparse: true
     },
 
     address: {
@@ -91,11 +84,6 @@ const customerSchema = new Schema(
     notes: {
       type: String,
       default: ""
-    },
-
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User"
     }
   },
   {
@@ -104,87 +92,27 @@ const customerSchema = new Schema(
 );
 
 
-/* =========================================================
-   MEASUREMENT
-========================================================= */
+// =====================================================
+// MEASUREMENT
+// =====================================================
 
 const measurementFields = {
-  qaddPirahan: {
-    type: Number,
-    default: null
-  },
-
-  shana: {
-    type: Number,
-    default: null
-  },
-
-  astin: {
-    type: Number,
-    default: null
-  },
-
-  baghal: {
-    type: Number,
-    default: null
-  },
-
-  kamar: {
-    type: Number,
-    default: null
-  },
-
-  balaTana: {
-    type: Number,
-    default: null
-  },
-
-  sorin: {
-    type: Number,
-    default: null
-  },
-
-  qaddKarti: {
-    type: Number,
-    default: null
-  },
-
-  qaddVest: {
-    type: Number,
-    default: null
-  },
-
-  qaddDaman: {
-    type: Number,
-    default: null
-  },
-
-  qaddShalwar: {
-    type: Number,
-    default: null
-  },
-
-  barDaman: {
-    type: Number,
-    default: null
-  },
-
-  pachah: {
-    type: Number,
-    default: null
-  },
-
-  barYakhon: {
-    type: Number,
-    default: null
-  },
-
-  dehanAstin: {
-    type: Number,
-    default: null
-  }
+  qaddPirahan: Number,
+  shana: Number,
+  astin: Number,
+  baghal: Number,
+  kamar: Number,
+  balaTana: Number,
+  sorin: Number,
+  qaddKarti: Number,
+  qaddVest: Number,
+  qaddDaman: Number,
+  qaddShalwar: Number,
+  barDaman: Number,
+  pachah: Number,
+  barYakhon: Number,
+  dehanAstin: Number
 };
-
 
 const maleMeasurementSchema = new Schema(
   measurementFields,
@@ -193,7 +121,6 @@ const maleMeasurementSchema = new Schema(
   }
 );
 
-
 const femaleMeasurementSchema = new Schema(
   measurementFields,
   {
@@ -201,14 +128,12 @@ const femaleMeasurementSchema = new Schema(
   }
 );
 
-
 const measurementSchema = new Schema(
   {
     customerId: {
       type: Schema.Types.ObjectId,
       ref: "Customer",
-      required: true,
-      index: true
+      required: true
     },
 
     gender: {
@@ -236,11 +161,6 @@ const measurementSchema = new Schema(
     notes: {
       type: String,
       default: ""
-    },
-
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User"
     }
   },
   {
@@ -249,9 +169,9 @@ const measurementSchema = new Schema(
 );
 
 
-/* =========================================================
-   ORDER
-========================================================= */
+// =====================================================
+// ORDER
+// =====================================================
 
 const orderSchema = new Schema(
   {
@@ -270,11 +190,6 @@ const orderSchema = new Schema(
     measurementId: {
       type: Schema.Types.ObjectId,
       ref: "Measurement"
-    },
-
-    title: {
-      type: String,
-      default: ""
     },
 
     description: {
@@ -326,18 +241,11 @@ const orderSchema = new Schema(
       min: 0
     },
 
-    deliveryDate: {
-      type: Date
-    },
+    deliveryDate: Date,
 
     notes: {
       type: String,
       default: ""
-    },
-
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User"
     }
   },
   {
@@ -346,9 +254,9 @@ const orderSchema = new Schema(
 );
 
 
-/* =========================================================
-   PAYMENT
-========================================================= */
+// =====================================================
+// PAYMENT
+// =====================================================
 
 const paymentSchema = new Schema(
   {
@@ -397,9 +305,9 @@ const paymentSchema = new Schema(
 );
 
 
-/* =========================================================
-   EXPENSE
-========================================================= */
+// =====================================================
+// EXPENSE
+// =====================================================
 
 const expenseSchema = new Schema(
   {
@@ -436,9 +344,9 @@ const expenseSchema = new Schema(
 );
 
 
-/* =========================================================
-   INVENTORY
-========================================================= */
+// =====================================================
+// INVENTORY
+// =====================================================
 
 const inventorySchema = new Schema(
   {
@@ -479,11 +387,6 @@ const inventorySchema = new Schema(
     notes: {
       type: String,
       default: ""
-    },
-
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User"
     }
   },
   {
@@ -492,9 +395,9 @@ const inventorySchema = new Schema(
 );
 
 
-/* =========================================================
-   INVOICE
-========================================================= */
+// =====================================================
+// INVOICE
+// =====================================================
 
 const invoiceSchema = new Schema(
   {
@@ -544,11 +447,6 @@ const invoiceSchema = new Schema(
     notes: {
       type: String,
       default: ""
-    },
-
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User"
     }
   },
   {
@@ -557,24 +455,18 @@ const invoiceSchema = new Schema(
 );
 
 
-/* =========================================================
-   EMPLOYEE
-========================================================= */
+// =====================================================
+// EMPLOYEE
+// =====================================================
 
 const employeeSchema = new Schema(
   {
     name: {
       type: String,
-      required: true,
-      trim: true
+      required: true
     },
 
     phone: {
-      type: String,
-      default: ""
-    },
-
-    role: {
       type: String,
       default: ""
     },
@@ -598,11 +490,6 @@ const employeeSchema = new Schema(
     notes: {
       type: String,
       default: ""
-    },
-
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User"
     }
   },
   {
@@ -611,9 +498,9 @@ const employeeSchema = new Schema(
 );
 
 
-/* =========================================================
-   NOTIFICATION
-========================================================= */
+// =====================================================
+// NOTIFICATION
+// =====================================================
 
 const notificationSchema = new Schema(
   {
@@ -649,9 +536,9 @@ const notificationSchema = new Schema(
 );
 
 
-/* =========================================================
-   SETTINGS
-========================================================= */
+// =====================================================
+// SETTINGS
+// =====================================================
 
 const settingSchema = new Schema(
   {
@@ -661,11 +548,6 @@ const settingSchema = new Schema(
     },
 
     ownerName: {
-      type: String,
-      default: ""
-    },
-
-    name: {
       type: String,
       default: ""
     },
@@ -693,11 +575,6 @@ const settingSchema = new Schema(
     invoiceFooter: {
       type: String,
       default: ""
-    },
-
-    description: {
-      type: String,
-      default: ""
     }
   },
   {
@@ -706,9 +583,9 @@ const settingSchema = new Schema(
 );
 
 
-/* =========================================================
-   MODELS
-========================================================= */
+// =====================================================
+// MODELS
+// =====================================================
 
 const User =
   mongoose.models.User ||
@@ -754,10 +631,6 @@ const Setting =
   mongoose.models.Setting ||
   mongoose.model("Setting", settingSchema);
 
-
-/* =========================================================
-   EXPORT
-========================================================= */
 
 module.exports = {
   User,
