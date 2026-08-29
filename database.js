@@ -1,34 +1,53 @@
 const mongoose = require("mongoose");
 
 async function connectDatabase() {
-  const uri = process.env.MONGODB_URI;
-
-  if (!uri || !uri.trim()) {
-    throw new Error("MONGODB_URI is not configured");
-  }
-
-  console.log("🔄 Connecting to MongoDB...");
-  console.log("📦 Database: Khayat");
-
   try {
+    const uri = process.env.MONGODB_URI;
+
+    if (!uri) {
+      throw new Error(
+        "MONGODB_URI در Environment Variables تنظیم نشده است"
+      );
+    }
+
+    // اتصال به MongoDB
     await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 10000,
-      connectTimeoutMS: 10000,
-      socketTimeoutMS: 45000
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000
     });
 
     console.log("=================================");
     console.log("✅ MongoDB Connected Successfully");
     console.log("📦 Database:", mongoose.connection.name);
-    console.log("🟢 MongoDB Status: Connected");
     console.log("=================================");
 
+    // وقتی اتصال قطع شود
+    mongoose.connection.on("disconnected", () => {
+      console.log("⚠️ MongoDB disconnected");
+    });
+
+    // وقتی دوباره وصل شود
+    mongoose.connection.on("connected", () => {
+      console.log("✅ MongoDB connected");
+    });
+
+    // خطای اتصال
+    mongoose.connection.on("error", (error) => {
+      console.error(
+        "❌ MongoDB connection error:",
+        error.message
+      );
+    });
+
     return mongoose.connection;
+
   } catch (error) {
-    console.error("=================================");
-    console.error("❌ MongoDB Connection Failed");
-    console.error("❌ Error:", error.message);
-    console.error("=================================");
+
+    console.error(
+      "❌ MongoDB connection failed:"
+    );
+
+    console.error(error.message);
 
     throw error;
   }
