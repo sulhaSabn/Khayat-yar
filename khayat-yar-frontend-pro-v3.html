@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0f172a">
+<title>خیاط‌یار | مدیریت خیاطی</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:Tahoma,Arial,sans-serif;background:#f5f7fb;color:#172033}
+body{overflow-x:hidden}.app{width:100%;max-width:520px;margin:auto;min-height:100vh;background:#f5f7fb}
+button,input,select,textarea{font:inherit}button{border:0;cursor:pointer}.hidden{display:none!important}
+.header{position:sticky;top:0;z-index:20;background:#0f172a;color:#fff;padding:14px 15px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 18px #0002}
+.brand{display:flex;align-items:center;gap:9px}.brand-icon{width:40px;height:40px;border-radius:12px;background:#4f46e5;display:grid;place-items:center;font-size:21px}.brand b{display:block;font-size:17px}.brand small{color:#cbd5e1;font-size:10px}
+.container{padding:14px 14px 90px}.card{background:#fff;border-radius:19px;padding:16px;margin-bottom:13px;box-shadow:0 5px 20px #0f172a0b;border:1px solid #eef2f7}
+.title{font-size:17px;font-weight:800;margin-bottom:5px}.subtitle{font-size:12px;color:#64748b;margin-bottom:15px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{margin-bottom:11px}.field label{display:block;font-size:12px;color:#475569;margin-bottom:6px;font-weight:600}
+input,select,textarea{width:100%;border:1px solid #dbe2ea;border-radius:12px;padding:12px;background:#fff;color:#172033;outline:none;font-size:13px}
+input:focus,select:focus,textarea:focus{border-color:#6366f1;box-shadow:0 0 0 3px #6366f11a}textarea{min-height:78px;resize:vertical}
+.btn{width:100%;padding:13px;border-radius:12px;font-weight:800;font-size:13px}.primary{background:#4f46e5;color:#fff}.success{background:#059669;color:#fff}.secondary{background:#e8edf3;color:#1e293b}.danger{background:#dc2626;color:#fff}
+.actions{display:flex;gap:8px}.actions>*{flex:1}.small{padding:9px 10px;border-radius:10px;font-size:11px;font-weight:700}
+.login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px}.login-card{width:100%;max-width:430px;background:#fff;border-radius:24px;padding:23px;box-shadow:0 14px 45px #0f172a18}
+.logo{text-align:center;font-size:29px;font-weight:900}.login-sub{text-align:center;color:#64748b;font-size:12px;margin:6px 0 20px}
+.connection{padding:10px 12px;border-radius:11px;font-size:11px;margin-bottom:14px}.online{background:#dcfce7;color:#166534}.offline{background:#fee2e2;color:#991b1b}
+.home-head{background:linear-gradient(135deg,#312e81,#4f46e5);color:#fff;border-radius:21px;padding:19px;margin-bottom:13px;box-shadow:0 10px 25px #4f46e52e}
+.home-head h2{margin:0 0 6px;font-size:19px}.home-head p{margin:0;color:#e0e7ff;font-size:11px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}.stat{background:#ffffff18;border:1px solid #ffffff20;padding:11px;border-radius:13px}.stat span{font-size:10px;color:#e0e7ff}.stat b{display:block;margin-top:5px;font-size:17px}
+.menu{display:grid;grid-template-columns:1fr 1fr;gap:10px}.menu button{background:#fff;border:1px solid #edf0f5;border-radius:17px;padding:17px 8px;text-align:center;box-shadow:0 4px 15px #0f172a08}.mi{font-size:28px}.mn{font-size:12px;font-weight:800;margin-top:7px}
+.gender{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 14px}.gender button{background:#fff;border:2px solid #e2e8f0;border-radius:16px;padding:15px;font-weight:800}.gender button.active{border-color:#4f46e5;background:#eef2ff;color:#3730a3}.gender .gi{font-size:30px;display:block;margin-bottom:5px}
+.measure-head{padding:11px;border-radius:12px;background:#eef2ff;color:#3730a3;font-weight:800;font-size:13px;margin:13px 0}
+.measure-group{border:1px solid #e5e7eb;border-radius:15px;padding:12px;margin-bottom:10px}.measure-group h4{margin:0 0 10px;font-size:12px;color:#475569}
+.item{background:#fff;border:1px solid #edf0f5;border-radius:15px;padding:13px;margin-bottom:9px}.item-top{display:flex;justify-content:space-between;gap:8px}.badge{font-size:10px;background:#eef2ff;color:#4338ca;border-radius:8px;padding:5px 8px;white-space:nowrap}.muted{font-size:11px;color:#64748b;margin-top:6px}
+.empty{text-align:center;padding:30px;color:#94a3b8;background:#fff;border-radius:16px}.nav{position:fixed;bottom:0;left:0;right:0;z-index:30;margin:auto;max-width:520px;background:#fff;border-top:1px solid #e5e7eb;display:flex;box-shadow:0 -5px 20px #0f172a0b}.nav button{flex:1;background:#fff;color:#64748b;padding:9px 3px;font-size:10px}.nav button.active{color:#4f46e5;font-weight:900}.nav i{display:block;font-style:normal;font-size:18px;margin-bottom:2px}
+.loading{position:fixed;inset:0;background:#0f172a88;z-index:100;display:none;align-items:center;justify-content:center}.loadbox{background:#fff;border-radius:17px;padding:22px 28px;text-align:center;font-size:12px}.spin{width:32px;height:32px;border:4px solid #e5e7eb;border-top-color:#4f46e5;border-radius:50%;animation:s 1s linear infinite;margin:0 auto 10px}@keyframes s{to{transform:rotate(360deg)}}
+.toast{position:fixed;z-index:110;bottom:75px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:11px 15px;border-radius:12px;font-size:11px;max-width:90%;display:none}
+.back{background:#334155;color:#fff;border-radius:10px;padding:8px 11px;font-size:11px}
+@media(max-width:360px){.container{padding:10px 10px 88px}.grid{gap:7px}.card{padding:13px}.menu{gap:7px}}
+</style>
+</head>
+<body>
+<div id="loading" class="loading"><div class="loadbox"><div class="spin"></div>لطفاً صبر کنید...</div></div>
+<div id="toast" class="toast"></div>
+
+<section id="loginPage" class="login">
+ <div class="login-card">
+  <div class="logo">✂️ خیاط‌یار</div><div class="login-sub">سیستم حرفه‌ای مدیریت خیاطی</div>
+  <div id="connectionBox" class="connection offline">در حال بررسی اتصال به سرور...</div>
+  <div id="loginForm">
+   <div class="field"><label>ایمیل یا شماره تلفن</label><input id="loginIdentifier" autocomplete="username" placeholder="ایمیل یا شماره تلفن"></div>
+   <div class="field"><label>رمز عبور</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="رمز عبور"></div>
+   <button class="btn primary" onclick="login()">ورود به حساب</button>
+   <button class="btn secondary" style="margin-top:8px" onclick="showRegister()">ایجاد حساب جدید</button>
+  </div>
+  <div id="registerForm" class="hidden">
+   <div class="field"><label>نام *</label><input id="regName" placeholder="نام شما"></div>
+   <div class="field"><label>ایمیل</label><input id="regEmail" type="email" placeholder="example@gmail.com"></div>
+   <div class="field"><label>شماره تلفن</label><input id="regPhone" placeholder="07xxxxxxxx"></div>
+   <div class="field"><label>رمز عبور *</label><input id="regPassword" type="password" placeholder="حداقل ۶ کاراکتر"></div>
+   <button class="btn success" onclick="registerUser()">ثبت‌نام</button>
+   <button class="btn secondary" style="margin-top:8px" onclick="showLogin()">بازگشت</button>
+  </div>
+ </div>
+</section>
+
+<div id="app" class="app hidden">
+<header class="header">
+ <div class="brand"><div class="brand-icon">✂️</div><div><b>خیاط‌یار</b><small id="headerUser">مدیریت خیاطی</small></div></div>
+ <button class="back" onclick="goHome()">خانه</button>
+</header>
+
+<main class="container">
+<section id="homePage">
+ <div class="home-head"><h2>سلام، <span id="welcomeName">خیاط</span> 👋</h2><p>مدیریت سفارش‌ها، مشتریان و حساب خیاطی در یکجا</p>
+  <div class="stats">
+   <div class="stat"><span>فروش امروز</span><b id="salesToday">0</b></div><div class="stat"><span>فروش ماه</span><b id="salesMonth">0</b></div>
+   <div class="stat"><span>سفارش فعال</span><b id="activeOrders">0</b></div><div class="stat"><span>مشتریان</span><b id="customerCount">0</b></div>
+  </div>
+ </div>
+ <div class="menu">
+  <button onclick="openPage('customersPage')"><div class="mi">👥</div><div class="mn">مشتریان</div></button>
+  <button onclick="openPage('ordersPage')"><div class="mi">📋</div><div class="mn">سفارش‌ها</div></button>
+  <button onclick="openPage('paymentsPage')"><div class="mi">💰</div><div class="mn">پرداخت‌ها</div></button>
+  <button onclick="openPage('expensesPage')"><div class="mi">💸</div><div class="mn">هزینه‌ها</div></button>
+  <button onclick="openPage('inventoryPage')"><div class="mi">📦</div><div class="mn">موجودی</div></button>
+  <button onclick="openPage('employeesPage')"><div class="mi">👨‍🔧</div><div class="mn">کارمندان</div></button>
+  <button onclick="openPage('invoicesPage')"><div class="mi">🧾</div><div class="mn">فاکتورها</div></button>
+  <button onclick="openPage('settingsPage')"><div class="mi">⚙️</div><div class="mn">تنظیمات</div></button>
+ </div>
+</section>
+
+<section id="customersPage" class="hidden">
+ <div class="card">
+  <div class="title">👤 ثبت مشتری جدید</div><div class="subtitle">اطلاعات مشتری و اندازه‌های اختصاصی را ثبت کنید</div>
+  <div class="field"><label>نام مشتری *</label><input id="customerName" placeholder="نام کامل"></div>
+  <div class="field"><label>شماره تلفن *</label><input id="customerPhone" placeholder="شماره تلفن"></div>
+  <div class="field"><label>آدرس</label><input id="customerAddress" placeholder="آدرس"></div>
+  <label class="field"><span style="font-size:12px;font-weight:600;color:#475569">جنسیت مشتری *</span></label>
+  <div class="gender"><button id="maleBtn" onclick="selectGender('male')"><span class="gi">👨</span>مرد</button><button id="femaleBtn" onclick="selectGender('female')"><span class="gi">👩</span>زن</button></div>
+  <div id="measurementArea" class="hidden">
+   <div id="measureTitle" class="measure-head">📏 اندازه‌های مردانه</div>
+   <div id="maleMeasures" class="measure-group">
+    <h4>لباس مردانه</h4><div class="grid">
+     <div class="field"><label>قد پیراهن</label><input id="m_qaddPirahan" type="number" inputmode="decimal"></div>
+     <div class="field"><label>شانه</label><input id="m_shana" type="number" inputmode="decimal"></div>
+     <div class="field"><label>آستین</label><input id="m_astin" type="number" inputmode="decimal"></div>
+     <div class="field"><label>بغل</label><input id="m_baghal" type="number" inputmode="decimal"></div>
+     <div class="field"><label>بر دامن</label><input id="m_barDaman" type="number" inputmode="decimal"></div>
+     <div class="field"><label>کف</label><input id="m_kaf" type="number" inputmode="decimal"></div>
+     <div class="field"><label>قد واسکت</label><input id="m_qaddVest" type="number" inputmode="decimal"></div>
+     <div class="field"><label>قد شلوار</label><input id="m_qaddShalwar" type="number" inputmode="decimal"></div>
+     <div class="field"><label>پاچه</label><input id="m_pachah" type="number" inputmode="decimal"></div>
+     <div class="field"><label>بر یخن</label><input id="m_barYakhon" type="number" inputmode="decimal"></div>
+     <div class="field"><label>دهن آستین</label><input id="m_dehanAstin" type="number" inputmode="decimal"></div>
+    </div></div>
+   <div id="femaleMeasures" class="measure-group hidden">
+    <h4>لباس زنانه</h4><div class="grid">
+     <div class="field"><label>قد پیراهن</label><input id="f_qaddPirahan" type="number" inputmode="decimal"></div>
+     <div class="field"><label>شانه</label><input id="f_shana" type="number" inputmode="decimal"></div>
+     <div class="field"><label>دور سینه</label><input id="f_sina" type="number" inputmode="decimal"></div>
+     <div class="field"><label>دور کمر</label><input id="f_kamar" type="number" inputmode="decimal"></div>
+     <div class="field"><label>دور باسن</label><input id="f_bason" type="number" inputmode="decimal"></div>
+     <div class="field"><label>آستین</label><input id="f_astin" type="number" inputmode="decimal"></div>
+     <div class="field"><label>بغل</label><input id="f_baghal" type="number" inputmode="decimal"></div>
+     <div class="field"><label>بالاتنه</label><input id="f_balataneh" type="number" inputmode="decimal"></div>
+     <div class="field"><label>قد کرتی</label><input id="f_qaddKarti" type="number" inputmode="decimal"></div>
+     <div class="field"><label>قد دامن</label><input id="f_qaddDaman" type="number" inputmode="decimal"></div>
+     <div class="field"><label>بر دامن</label><input id="f_barDaman" type="number" inputmode="decimal"></div>
+     <div class="field"><label>قد شلوار</label><input id="f_qaddShalwar" type="number" inputmode="decimal"></div>
+     <div class="field"><label>پاچه</label><input id="f_pachah" type="number" inputmode="decimal"></div>
+     <div class="field"><label>بر یخن</label><input id="f_barYakhon" type="number" inputmode="decimal"></div>
+     <div class="field"><label>دهن آستین</label><input id="f_dehanAstin" type="number" inputmode="decimal"></div>
+    </div></div>
+   <div class="field"><label>واحد</label><select id="measurementUnit"><option value="cm">سانتی‌متر</option><option value="inch">اینچ</option></select></div>
+   <div class="field"><label>یادداشت اندازه‌ها</label><textarea id="measurementNotes" placeholder="مثلاً لباس تنگ، آزاد، تغییرات خاص..."></textarea></div>
+  </div>
+  <div class="field"><label>یادداشت مشتری</label><textarea id="customerNotes"></textarea></div>
+  <button class="btn success" onclick="createCustomer()">💾 ثبت مشتری و اندازه‌ها</button>
+ </div>
+ <div class="card"><div class="title">🔎 جستجوی مشتری</div><input id="customerSearch" placeholder="نام یا شماره تلفن..." oninput="loadCustomers()"></div>
+ <div id="customerList"></div>
+</section>
+
+<section id="ordersPage" class="hidden">
+ <div class="card"><div class="title">📋 ثبت سفارش</div>
+  <div class="field"><label>شناسه مشتری *</label><input id="orderCustomerId" placeholder="شناسه مشتری"></div>
+  <div class="field"><label>توضیحات</label><textarea id="orderDescription"></textarea></div>
+  <div class="grid">
+   <div class="field"><label>قیمت</label><input id="orderPrice" type="number" value="0"></div><div class="field"><label>تخفیف</label><input id="orderDiscount" type="number" value="0"></div>
+   <div class="field"><label>پرداخت اولیه</label><input id="orderPaid" type="number" value="0"></div>
+   <div class="field"><label>وضعیت</label><select id="orderStatus"><option value="registered">ثبت شده</option><option value="cutting">برش</option><option value="sewing">دوخت</option><option value="fitting">پرو</option><option value="ready">آماده</option><option value="delivered">تحویل شده</option><option value="cancelled">لغو شده</option></select></div>
+  </div><button class="btn success" onclick="createOrder()">ثبت سفارش</button>
+ </div><div id="orderList"></div>
+</section>
+
+<section id="paymentsPage" class="hidden"><div class="card"><div class="title">💰 ثبت پرداخت</div>
+ <div class="field"><label>شناسه سفارش</label><input id="paymentOrderId"></div><div class="field"><label>مبلغ</label><input id="paymentAmount" type="number"></div>
+ <div class="field"><label>روش پرداخت</label><select id="paymentMethod"><option value="cash">نقدی</option><option value="card">کارت</option><option value="transfer">انتقال</option><option value="other">سایر</option></select></div>
+ <div class="field"><label>یادداشت</label><textarea id="paymentNote"></textarea></div><button class="btn success" onclick="createPayment()">ثبت پرداخت</button>
+ </div><div id="paymentList"></div></section>
+
+<section id="expensesPage" class="hidden"><div class="card"><div class="title">💸 ثبت هزینه</div>
+ <div class="field"><label>عنوان</label><input id="expenseTitle"></div><div class="field"><label>مبلغ</label><input id="expenseAmount" type="number"></div>
+ <div class="field"><label>دسته‌بندی</label><input id="expenseCategory" placeholder="برق، کرایه، پارچه..."></div><div class="field"><label>توضیحات</label><textarea id="expenseDescription"></textarea></div>
+ <button class="btn success" onclick="createExpense()">ثبت هزینه</button></div><div id="expenseList"></div></section>
+
+<section id="inventoryPage" class="hidden"><div class="card"><div class="title">📦 ثبت موجودی</div>
+ <div class="field"><label>نام کالا</label><input id="inventoryName"></div><div class="grid">
+ <div class="field"><label>دسته‌بندی</label><input id="inventoryCategory"></div><div class="field"><label>تعداد</label><input id="inventoryQuantity" type="number"></div>
+ <div class="field"><label>واحد</label><input id="inventoryUnit" value="عدد"></div><div class="field"><label>حداقل موجودی</label><input id="inventoryMinimum" type="number"></div><div class="field"><label>قیمت</label><input id="inventoryPrice" type="number"></div>
+ </div><button class="btn success" onclick="createInventory()">ثبت کالا</button></div><div id="inventoryList"></div></section>
+
+<section id="employeesPage" class="hidden"><div class="card"><div class="title">👨‍🔧 ثبت کارمند</div>
+ <div class="field"><label>نام</label><input id="employeeName"></div><div class="field"><label>شماره تلفن</label><input id="employeePhone"></div>
+ <div class="field"><label>سمت</label><input id="employeePosition"></div><div class="field"><label>حقوق</label><input id="employeeSalary" type="number"></div>
+ <button class="btn success" onclick="createEmployee()">ثبت کارمند</button></div><div id="employeeList"></div></section>
+
+<section id="invoicesPage" class="hidden"><div class="card"><div class="title">🧾 ساخت فاکتور</div><div class="field"><label>شناسه سفارش</label><input id="invoiceOrderId"></div><button class="btn success" onclick="createInvoice()">ساخت فاکتور</button></div><div id="invoiceList"></div></section>
+
+<section id="settingsPage" class="hidden"><div class="card"><div class="title">⚙️ تنظیمات فروشگاه</div>
+ <div class="field"><label>نام خیاطی</label><input id="shopName"></div><div class="field"><label>نام صاحب</label><input id="ownerName"></div>
+ <div class="field"><label>تلفن</label><input id="shopPhone"></div><div class="field"><label>آدرس</label><textarea id="shopAddress"></textarea></div>
+ <div class="field"><label>واحد پول</label><input id="currency" value="AFN"></div><div class="field"><label>پایین فاکتور</label><textarea id="invoiceFooter"></textarea></div>
+ <button class="btn primary" onclick="saveSettings()">ذخیره تنظیمات</button></div></section>
+</main>
+
+<nav class="nav">
+ <button id="navHome" onclick="goHome()"><i>🏠</i>خانه</button><button onclick="openPage('customersPage')"><i>👥</i>مشتری</button><button onclick="openPage('ordersPage')"><i>📋</i>سفارش</button><button onclick="logout()"><i>🚪</i>خروج</button>
+</nav>
+</div>
+
+<script>
+const API_BASE="https://khayat-yar.onrender.com";
+let token=localStorage.getItem("khayat_token")||"",currentUser=null,selectedGender="";
+const pages=["homePage","customersPage","ordersPage","paymentsPage","expensesPage","inventoryPage","employeesPage","invoicesPage","settingsPage"];
+const $=id=>document.getElementById(id);
+function loading(v){$("loading").style.display=v?"flex":"none"}
+function toast(m){const e=$("toast");e.textContent=m;e.style.display="block";clearTimeout(window.tt);window.tt=setTimeout(()=>e.style.display="none",3000)}
+function money(v){return Number(v||0).toLocaleString("fa-AF")}
+function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+
+async function api(path,opt={}){
+ const headers={"Content-Type":"application/json",...(opt.headers||{})};if(token)headers.Authorization="Bearer "+token;
+ let r;try{r=await fetch(API_BASE+path,{...opt,headers})}catch(e){throw new Error("اتصال به سرور برقرار نشد")}
+ let d;try{d=await r.json()}catch(e){throw new Error("پاسخ سرور نامعتبر است")}
+ if(!r.ok){if(r.status===401){logout(false)}throw new Error(d.message||"خطا در سرور")}
+ return d
+}
+async function checkServer(){
+ const b=$("connectionBox");try{const r=await fetch(API_BASE+"/api/health");const d=await r.json();
+  if(!d.success)throw 0;b.className="connection online";b.textContent="🟢 سرور آنلاین است | پایگاه داده: "+(d.database==="connected"?"متصل":"در حال اتصال")
+ }catch(e){b.className="connection offline";b.textContent="🔴 سرور در دسترس نیست. آدرس API را بررسی کنید."}
+}
+function showRegister(){$("loginForm").classList.add("hidden");$("registerForm").classList.remove("hidden")}
+function showLogin(){$("registerForm").classList.add("hidden");$("loginForm").classList.remove("hidden")}
+async function registerUser(){
+ const name=$("regName").value.trim(),email=$("regEmail").value.trim(),phone=$("regPhone").value.trim(),password=$("regPassword").value;
+ if(!name)return toast("نام را وارد کنید");if(!email&&!phone)return toast("ایمیل یا شماره تلفن الزامی است");if(password.length<6)return toast("رمز عبور حداقل ۶ کاراکتر باشد");
+ loading(true);try{const r=await api("/api/auth/register",{method:"POST",body:JSON.stringify({name,email:email||undefined,phone:phone||undefined,password})});saveAuth(r.data);toast("ثبت‌نام موفق بود")}catch(e){toast(e.message)}finally{loading(false)}
+}
+async function login(){
+ const identifier=$("loginIdentifier").value.trim(),password=$("loginPassword").value;if(!identifier)return toast("ایمیل یا شماره تلفن را وارد کنید");if(!password)return toast("رمز عبور را وارد کنید");
+ loading(true);try{const r=await api("/api/auth/login",{method:"POST",body:JSON.stringify({identifier,password})});saveAuth(r.data);toast("ورود موفق بود")}catch(e){toast(e.message)}finally{loading(false)}
+}
+function saveAuth(d){token=d.token;currentUser=d.user;localStorage.setItem("khayat_token",token);localStorage.setItem("khayat_user",JSON.stringify(currentUser));showApp()}
+function showApp(){$("loginPage").classList.add("hidden");$("app").classList.remove("hidden");$("headerUser").textContent=currentUser?.name||"مدیریت خیاطی";$("welcomeName").textContent=currentUser?.name||"خیاط";goHome()}
+function logout(msg=true){token="";currentUser=null;localStorage.removeItem("khayat_token");localStorage.removeItem("khayat_user");$("app").classList.add("hidden");$("loginPage").classList.remove("hidden");if(msg)toast("از حساب خارج شدید")}
+function openPage(id){pages.forEach(x=>$(x).classList.add("hidden"));$(id).classList.remove("hidden");window.scrollTo({top:0,behavior:"smooth"});const f={customersPage:loadCustomers,ordersPage:loadOrders,paymentsPage:loadPayments,expensesPage:loadExpenses,inventoryPage:loadInventory,employeesPage:loadEmployees,invoicesPage:loadInvoices,settingsPage:loadSettings}[id];if(f)f()}
+function goHome(){pages.forEach(x=>$(x).classList.add("hidden"));$("homePage").classList.remove("hidden");loadDashboard();window.scrollTo({top:0,behavior:"smooth"})}
+
+function selectGender(g){
+ selectedGender=g;$("maleBtn").classList.toggle("active",g==="male");$("femaleBtn").classList.toggle("active",g==="female");$("measurementArea").classList.remove("hidden");
+ $("maleMeasures").classList.toggle("hidden",g!=="male");$("femaleMeasures").classList.toggle("hidden",g!=="female");$("measureTitle").textContent=g==="male"?"📏 اندازه‌های مردانه":"📏 اندازه‌های زنانه"
+}
+const maleFields=["qaddPirahan","shana","astin","baghal","barDaman","kaf","qaddVest","qaddShalwar","pachah","barYakhon","dehanAstin"];
+const femaleFields=["qaddPirahan","shana","sina","kamar","bason","astin","baghal","balataneh","qaddKarti","qaddDaman","barDaman","qaddShalwar","pachah","barYakhon","dehanAstin"];
+function readMeasures(prefix,fields){const o={};fields.forEach(k=>{const v=$(`${prefix}_${k}`).value;o[k]=v===""?null:Number(v)});return o}
+async function createCustomer(){
+ const name=$("customerName").value.trim(),phone=$("customerPhone").value.trim();if(!name||!phone)return toast("نام و شماره تلفن الزامی است");if(!selectedGender)return toast("جنسیت مشتری را انتخاب کنید");
+ loading(true);try{
+  const r=await api("/api/customers",{method:"POST",body:JSON.stringify({name,phone,address:$("customerAddress").value.trim(),gender:selectedGender,notes:$("customerNotes").value.trim()})});
+  const id=r.data?._id||r.data?.id;if(!id)throw new Error("شناسه مشتری از سرور دریافت نشد");
+  const measurements=selectedGender==="male"?readMeasures("m",maleFields):readMeasures("f",femaleFields);
+  await api("/api/customers/"+id+"/measurements",{method:"POST",body:JSON.stringify({gender:selectedGender,unit:$("measurementUnit").value,[selectedGender]:measurements,notes:$("measurementNotes").value.trim()})});
+  toast("مشتری و اندازه‌ها ثبت شدند");clearCustomer();loadCustomers();loadDashboard()
+ }catch(e){toast(e.message)}finally{loading(false)}
+}
+function clearCustomer(){["customerName","customerPhone","customerAddress","customerNotes","measurementNotes"].forEach(id=>$(id).value="");[...maleFields.map(x=>"m_"+x),...femaleFields.map(x=>"f_"+x)].forEach(id=>{if($(id))$(id).value=""});selectedGender="";$("maleBtn").classList.remove("active");$("femaleBtn").classList.remove("active");$("measurementArea").classList.add("hidden")}
+async function loadCustomers(){if(!token)return;try{const q=encodeURIComponent($("customerSearch")?.value||"");const r=await api("/api/customers?search="+q),a=r.data||[];$("customerList").innerHTML=a.length?a.map(c=>`<div class="item"><div class="item-top"><b>${esc(c.name)}</b><span class="badge">${c.gender==="male"?"👨 مرد":"👩 زن"}</span></div><div class="muted">📞 ${esc(c.phone)}</div><div class="muted" style="direction:ltr;text-align:right">ID: ${esc(c._id)}</div><div class="actions" style="margin-top:9px"><button class="small primary" onclick="viewCustomer('${c._id}')">مشاهده</button><button class="small danger" onclick="deleteCustomer('${c._id}')">حذف</button></div></div>`).join(""):`<div class="empty">مشتری‌ای پیدا نشد</div>`}catch(e){$("customerList").innerHTML=`<div class="empty">${esc(e.message)}</div>`}}
+async function viewCustomer(id){loading(true);try{const r=await api("/api/customers/"+id),d=r.data;let html=`<div class="card"><div class="title">${esc(d.customer?.name||"مشتری")}</div><div class="muted">تلفن: ${esc(d.customer?.phone)}</div><button class="btn secondary" style="margin-top:10px" onclick="loadCustomers()">بازگشت</button></div>`;(d.measurements||[]).forEach(m=>{const vals=m[m.gender];if(!vals)return;html+=`<div class="card"><div class="title">${m.gender==="male"?"👨 اندازه مردانه":"👩 اندازه زنانه"}</div><table style="width:100%;font-size:11px"><tbody>${Object.entries(vals).map(([k,v])=>`<tr><td style="padding:7px;border-bottom:1px solid #eee">${label(k)}</td><td style="padding:7px;border-bottom:1px solid #eee">${v??"-"}</td></tr>`).join("")}</tbody></table></div>`});$("customerList").innerHTML=html;window.scrollTo({top:0,behavior:"smooth"})}catch(e){toast(e.message)}finally{loading(false)}}
+function label(k){const x={qaddPirahan:"قد پیراهن",shana:"شانه",astin:"آستین",baghal:"بغل",kamar:"کمر",balataneh:"بالاتنه",sina:"سینه / دور سینه",bason:"باسن",qaddKarti:"قد کرتی",qaddVest:"قد واسکت",qaddDaman:"قد دامن",qaddShalwar:"قد شلوار",barDaman:"بر دامن",kaf:"کف",pachah:"پاچه",barYakhon:"بر یخن",dehanAstin:"دهن آستین"};return x[k]||k}
+async function deleteCustomer(id){if(!confirm("حذف این مشتری؟"))return;loading(true);try{await api("/api/customers/"+id,{method:"DELETE"});toast("مشتری حذف شد");loadCustomers();loadDashboard()}catch(e){toast(e.message)}finally{loading(false)}}
+
+async function createOrder(){const customerId=$("orderCustomerId").value.trim();if(!customerId)return toast("شناسه مشتری را وارد کنید");loading(true);try{await api("/api/orders",{method:"POST",body:JSON.stringify({customerId,description:$("orderDescription").value.trim(),price:Number($("orderPrice").value||0),discount:Number($("orderDiscount").value||0),paidAmount:Number($("orderPaid").value||0),status:$("orderStatus").value})});toast("سفارش ثبت شد");loadOrders();loadDashboard()}catch(e){toast(e.message)}finally{loading(false)}}
+async function loadOrders(){try{const r=await api("/api/orders"),a=r.data||[];$("orderList").innerHTML=a.length?a.map(o=>`<div class="item"><div class="item-top"><b>${esc(o.orderNumber||o._id)}</b><span class="badge">${esc(o.status)}</span></div><div class="muted">مشتری: ${esc(o.customerId?.name||o.customerId||"-")}</div><div style="margin-top:7px">قیمت: <b>${money(o.finalPrice)}</b></div><div class="muted">پرداخت: ${money(o.paidAmount)} | باقی: ${money(o.remainingAmount)}</div></div>`).join(""):`<div class="empty">سفارشی وجود ندارد</div>`}catch(e){$("orderList").innerHTML=`<div class="empty">${esc(e.message)}</div>`}}
+async function createPayment(){const orderId=$("paymentOrderId").value.trim(),amount=Number($("paymentAmount").value||0);if(!orderId||amount<=0)return toast("اطلاعات پرداخت صحیح نیست");loading(true);try{await api("/api/payments",{method:"POST",body:JSON.stringify({orderId,amount,method:$("paymentMethod").value,note:$("paymentNote").value.trim()})});toast("پرداخت ثبت شد");loadPayments();loadDashboard()}catch(e){toast(e.message)}finally{loading(false)}}
+async function loadPayments(){try{const r=await api("/api/payments"),a=r.data||[];$("paymentList").innerHTML=a.length?a.map(p=>`<div class="item"><b>${money(p.amount)}</b><div class="muted">مشتری: ${esc(p.customerId?.name||"-")}</div><div class="muted">روش: ${esc(p.method)}</div></div>`).join(""):`<div class="empty">پرداختی وجود ندارد</div>`}catch(e){$("paymentList").innerHTML=`<div class="empty">${esc(e.message)}</div>`}}
+async function createExpense(){const title=$("expenseTitle").value.trim(),amount=Number($("expenseAmount").value||0);if(!title||amount<=0)return toast("عنوان و مبلغ را وارد کنید");loading(true);try{await api("/api/expenses",{method:"POST",body:JSON.stringify({title,amount,category:$("expenseCategory").value.trim(),description:$("expenseDescription").value.trim()})});toast("هزینه ثبت شد");loadExpenses();loadDashboard()}catch(e){toast(e.message)}finally{loading(false)}}
+async function loadExpenses(){try{const r=await api("/api/expenses"),a=r.data||[];$("expenseList").innerHTML=a.length?a.map(e=>`<div class="item"><b>${esc(e.title)}</b><div style="margin-top:6px">${money(e.amount)}</div><div class="muted">${esc(e.category)}</div></div>`).join(""):`<div class="empty">هزینه‌ای وجود ندارد</div>`}catch(e){$("expenseList").innerHTML=`<div class="empty">${esc(e.message)}</div>`}}
+async function createInventory(){const name=$("inventoryName").value.trim();if(!name)return toast("نام کالا را وارد کنید");loading(true);try{await api("/api/inventory",{method:"POST",body:JSON.stringify({name,category:$("inventoryCategory").value.trim(),quantity:Number($("inventoryQuantity").value||0),unit:$("inventoryUnit").value.trim(),minimumStock:Number($("inventoryMinimum").value||0),price:Number($("inventoryPrice").value||0)})});toast("کالا ثبت شد");loadInventory()}catch(e){toast(e.message)}finally{loading(false)}}
+async function loadInventory(){try{const r=await api("/api/inventory"),a=r.data||[];$("inventoryList").innerHTML=a.length?a.map(i=>`<div class="item"><div class="item-top"><b>${esc(i.name)}</b>${Number(i.quantity)<=Number(i.minimumStock)?'<span class="badge">⚠️ کمبود</span>':''}</div><div class="muted">موجودی: ${i.quantity} ${esc(i.unit)}</div><div class="muted">قیمت: ${money(i.price)}</div></div>`).join(""):`<div class="empty">موجودی وجود ندارد</div>`}catch(e){$("inventoryList").innerHTML=`<div class="empty">${esc(e.message)}</div>`}}
+async function createEmployee(){const name=$("employeeName").value.trim();if(!name)return toast("نام کارمند را وارد کنید");loading(true);try{await api("/api/employees",{method:"POST",body:JSON.stringify({name,phone:$("employeePhone").value.trim(),position:$("employeePosition").value.trim(),salary:Number($("employeeSalary").value||0)})});toast("کارمند ثبت شد");loadEmployees()}catch(e){toast(e.message)}finally{loading(false)}}
+async function loadEmployees(){try{const r=await api("/api/employees"),a=r.data||[];$("employeeList").innerHTML=a.length?a.map(e=>`<div class="item"><b>${esc(e.name)}</b><div class="muted">${esc(e.position||"")}</div><div style="margin-top:6px">حقوق: ${money(e.salary)}</div></div>`).join(""):`<div class="empty">کارمندی وجود ندارد</div>`}catch(e){$("employeeList").innerHTML=`<div class="empty">${esc(e.message)}</div>`}}
+async function createInvoice(){const orderId=$("invoiceOrderId").value.trim();if(!orderId)return toast("شناسه سفارش را وارد کنید");loading(true);try{await api("/api/invoices",{method:"POST",body:JSON.stringify({orderId})});toast("فاکتور ساخته شد");loadInvoices()}catch(e){toast(e.message)}finally{loading(false)}}
+async function loadInvoices(){try{const r=await api("/api/invoices"),a=r.data||[];$("invoiceList").innerHTML=a.length?a.map(i=>`<div class="item"><div class="item-top"><b>${esc(i.invoiceNumber)}</b><span class="badge">فاکتور</span></div><div style="margin-top:7px">مبلغ: <b>${money(i.total)}</b></div><div class="muted">پرداخت: ${money(i.paid)} | باقی: ${money(i.remaining)}</div></div>`).join(""):`<div class="empty">فاکتوری وجود ندارد</div>`}catch(e){$("invoiceList").innerHTML=`<div class="empty">${esc(e.message)}</div>`}}
+async function loadSettings(){try{const r=await api("/api/settings"),s=r.data||{};$("shopName").value=s.shopName||"";$("ownerName").value=s.ownerName||"";$("shopPhone").value=s.phone||"";$("shopAddress").value=s.address||"";$("currency").value=s.currency||"AFN";$("invoiceFooter").value=s.invoiceFooter||""}catch(e){toast(e.message)}}
+async function saveSettings(){loading(true);try{await api("/api/settings",{method:"PUT",body:JSON.stringify({shopName:$("shopName").value.trim(),ownerName:$("ownerName").value.trim(),phone:$("shopPhone").value.trim(),address:$("shopAddress").value.trim(),currency:$("currency").value.trim(),invoiceFooter:$("invoiceFooter").value.trim()})});toast("تنظیمات ذخیره شد")}catch(e){toast(e.message)}finally{loading(false)}}
+async function loadDashboard(){if(!token)return;try{const r=await api("/api/reports/dashboard"),d=r.data||{};$("salesToday").textContent=money(d.salesToday);$("salesMonth").textContent=money(d.salesMonth);$("activeOrders").textContent=d.activeOrders||0;$("customerCount").textContent=d.customers||0}catch(e){console.log(e.message)}}
+document.addEventListener("DOMContentLoaded",async()=>{await checkServer();if(token){try{const r=await api("/api/auth/me");currentUser=r.data;showApp()}catch(e){logout(false)}}});
+</script>
+</body>
+</html>
