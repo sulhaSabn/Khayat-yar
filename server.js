@@ -1,47 +1,63 @@
+require("dotenv").config();
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-const {
-  Customer,
-  Measurement,
-  Order,
-  Payment,
-  Expense,
-  Inventory,
-  Invoice,
-  Employee,
-  Notification,
-  Setting
-} = require("./models");
-
 const app = express();
 
-const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || "CHANGE_THIS_SECRET";
+/* =========================================================
+   CONFIG
+========================================================= */
 
-// ======================================================
-// MIDDLEWARE
-// ======================================================
+const PORT = process.env.PORT || 10000;
 
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"]
+const MONGODB_URI =
+  process.env.MONGODB_URI ||
+  process.env.MONGO_URI;
+
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  "CHANGE_THIS_SECRET_KEY";
+
+/* =========================================================
+   MIDDLEWARE
+========================================================= */
+
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+app.use(express.json({ limit: "2mb" }));
+
+app.use(express.urlencoded({
+  extended: true
+}));
+
+/* =========================================================
+   DATABASE
+========================================================= */
+
+mongoose.set("strictQuery", false);
+
+mongoose
+  .connect(MONGODB_URI)
+  .then(() => {
+    console.log("MongoDB connected");
   })
-);
+  .catch((error) => {
+    console.error("MongoDB connection error:", error);
+  });
 
-app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true }));
+/* =========================================================
+   USER MODEL
+========================================================= */
 
-// ======================================================
-// USER MODEL
-// ======================================================
-
-const userSchema = new mongoose.Schema(
+const UserSchema = new mongoose.Schema(
   {
     name: {
       type: String,
@@ -51,34 +67,27 @@ const userSchema = new mongoose.Schema(
 
     email: {
       type: String,
-      unique: true,
-      sparse: true,
+      trim: true,
       lowercase: true,
-      trim: true
+      unique: true,
+      sparse: true
     },
 
     phone: {
       type: String,
+      trim: true,
       unique: true,
-      sparse: true,
-      trim: true
+      sparse: true
     },
 
-    passwordHash: {
+    password: {
       type: String,
-      required: true,
-      select: false
+      required: true
     },
 
     role: {
       type: String,
-      enum: ["admin", "staff"],
       default: "admin"
-    },
-
-    isActive: {
-      type: Boolean,
-      default: true
     }
   },
   {
@@ -88,373 +97,1172 @@ const userSchema = new mongoose.Schema(
 
 const User =
   mongoose.models.User ||
-  mongoose.model("User", userSchema);
+  mongoose.model("User", UserSchema);
 
-// ======================================================
-// DATABASE
-// ======================================================
 
-const MONGODB_URI = process.env.MONGODB_URI;
+/* =========================================================
+   CUSTOMER MODEL
+========================================================= */
 
-if (!MONGODB_URI) {
-  console.error("❌ MONGODB_URI در Environment Variables تنظیم نشده است");
-  process.exit(1);
+const CustomerSchema = new mongoose.Schema(
+  {
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true
+    },
+
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    phone: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    address: {
+      type: String,
+      default: ""
+    },
+
+    gender: {
+      type: String,
+      enum: ["male", "female"],
+      required: true
+    },
+
+    notes: {
+      type: String,
+      default: ""
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+const Customer =
+  mongoose.models.Customer ||
+  mongoose.model("Customer", CustomerSchema);
+
+
+/* =========================================================
+   MEASUREMENT MODEL
+========================================================= */
+
+const MeasurementSchema = new mongoose.Schema(
+  {
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true
+    },
+
+    customer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      required: true,
+      index: true
+    },
+
+    gender: {
+      type: String,
+      enum: ["male", "female"],
+      required: true
+    },
+
+    unit: {
+      type: String,
+      enum: ["cm", "inch"],
+      default: "cm"
+    },
+
+    male: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null
+    },
+
+    female: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null
+    },
+
+    notes: {
+      type: String,
+      default: ""
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+const Measurement =
+  mongoose.models.Measurement ||
+  mongoose.model("Measurement", MeasurementSchema);
+
+
+/* =========================================================
+   ORDER MODEL
+========================================================= */
+
+const OrderSchema = new mongoose.Schema(
+  {
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true
+    },
+
+    customerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      required: true,
+      index: true
+    },
+
+    orderNumber: {
+      type: String,
+      required: true
+    },
+
+    description: {
+      type: String,
+      default: ""
+    },
+
+    price: {
+      type: Number,
+      default: 0
+    },
+
+    discount: {
+      type: Number,
+      default: 0
+    },
+
+    finalPrice: {
+      type: Number,
+      default: 0
+    },
+
+    paidAmount: {
+      type: Number,
+      default: 0
+    },
+
+    remainingAmount: {
+      type: Number,
+      default: 0
+    },
+
+    status: {
+      type: String,
+      enum: [
+        "registered",
+        "cutting",
+        "sewing",
+        "fitting",
+        "ready",
+        "delivered",
+        "cancelled"
+      ],
+      default: "registered"
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+const Order =
+  mongoose.models.Order ||
+  mongoose.model("Order", OrderSchema);
+
+
+/* =========================================================
+   PAYMENT MODEL
+========================================================= */
+
+const PaymentSchema = new mongoose.Schema(
+  {
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true
+    },
+
+    orderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+      required: true
+    },
+
+    customerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer"
+    },
+
+    amount: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+
+    method: {
+      type: String,
+      enum: [
+        "cash",
+        "card",
+        "transfer",
+        "other"
+      ],
+      default: "cash"
+    },
+
+    note: {
+      type: String,
+      default: ""
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+const Payment =
+  mongoose.models.Payment ||
+  mongoose.model("Payment", PaymentSchema);
+
+
+/* =========================================================
+   EXPENSE MODEL
+========================================================= */
+
+const ExpenseSchema = new mongoose.Schema(
+  {
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true
+    },
+
+    title: {
+      type: String,
+      required: true
+    },
+
+    amount: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+
+    category: {
+      type: String,
+      default: ""
+    },
+
+    description: {
+      type: String,
+      default: ""
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+const Expense =
+  mongoose.models.Expense ||
+  mongoose.model("Expense", ExpenseSchema);
+
+
+/* =========================================================
+   INVENTORY MODEL
+========================================================= */
+
+const InventorySchema = new mongoose.Schema(
+  {
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true
+    },
+
+    name: {
+      type: String,
+      required: true
+    },
+
+    category: {
+      type: String,
+      default: ""
+    },
+
+    quantity: {
+      type: Number,
+      default: 0
+    },
+
+    unit: {
+      type: String,
+      default: "عدد"
+    },
+
+    minimumStock: {
+      type: Number,
+      default: 0
+    },
+
+    price: {
+      type: Number,
+      default: 0
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+const Inventory =
+  mongoose.models.Inventory ||
+  mongoose.model("Inventory", InventorySchema);
+
+
+/* =========================================================
+   EMPLOYEE MODEL
+========================================================= */
+
+const EmployeeSchema = new mongoose.Schema(
+  {
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true
+    },
+
+    name: {
+      type: String,
+      required: true
+    },
+
+    phone: {
+      type: String,
+      default: ""
+    },
+
+    position: {
+      type: String,
+      default: ""
+    },
+
+    salary: {
+      type: Number,
+      default: 0
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+const Employee =
+  mongoose.models.Employee ||
+  mongoose.model("Employee", EmployeeSchema);
+
+
+/* =========================================================
+   INVOICE MODEL
+========================================================= */
+
+const InvoiceSchema = new mongoose.Schema(
+  {
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true
+    },
+
+    orderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+      required: true
+    },
+
+    invoiceNumber: {
+      type: String,
+      required: true
+    },
+
+    total: {
+      type: Number,
+      default: 0
+    },
+
+    paid: {
+      type: Number,
+      default: 0
+    },
+
+    remaining: {
+      type: Number,
+      default: 0
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+const Invoice =
+  mongoose.models.Invoice ||
+  mongoose.model("Invoice", InvoiceSchema);
+
+
+/* =========================================================
+   SETTINGS MODEL
+========================================================= */
+
+const SettingsSchema = new mongoose.Schema(
+  {
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true,
+      index: true
+    },
+
+    shopName: {
+      type: String,
+      default: ""
+    },
+
+    ownerName: {
+      type: String,
+      default: ""
+    },
+
+    phone: {
+      type: String,
+      default: ""
+    },
+
+    address: {
+      type: String,
+      default: ""
+    },
+
+    currency: {
+      type: String,
+      default: "AFN"
+    },
+
+    invoiceFooter: {
+      type: String,
+      default: ""
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+const Settings =
+  mongoose.models.Settings ||
+  mongoose.model("Settings", SettingsSchema);
+
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function sendSuccess(res, data, message = "") {
+  return res.json({
+    success: true,
+    message,
+    data
+  });
 }
 
-// ======================================================
-// JWT
-// ======================================================
 
-function createToken(user) {
-  return jwt.sign(
-    {
-      id: user._id.toString(),
-      role: user.role
-    },
-    JWT_SECRET,
-    {
-      expiresIn: "7d"
-    }
+function sendError(res, message, status = 400) {
+  return res.status(status).json({
+    success: false,
+    message
+  });
+}
+
+
+function generateNumber(prefix) {
+  return (
+    prefix +
+    "-" +
+    Date.now().toString(36).toUpperCase() +
+    "-" +
+    Math.floor(Math.random() * 1000)
   );
 }
 
-function safeUser(user) {
-  return {
-    id: user._id,
-    name: user.name,
-    email: user.email || "",
-    phone: user.phone || "",
-    role: user.role,
-    isActive: user.isActive
-  };
-}
 
-// ======================================================
-// AUTH MIDDLEWARE
-// ======================================================
+/* =========================================================
+   AUTH MIDDLEWARE
+========================================================= */
 
-function authRequired(req, res, next) {
+async function auth(req, res, next) {
+
   try {
-    const header = req.headers.authorization || "";
+
+    const header =
+      req.headers.authorization || "";
 
     if (!header.startsWith("Bearer ")) {
-      return res.status(401).json({
-        success: false,
-        message: "ابتدا وارد حساب شوید"
-      });
+      return sendError(
+        res,
+        "دسترسی غیرمجاز",
+        401
+      );
     }
 
-    const token = header.substring(7);
+    const token =
+      header.replace("Bearer ", "").trim();
 
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded =
+      jwt.verify(token, JWT_SECRET);
 
-    req.user = decoded;
-
-    next();
-  } catch (error) {
-    return res.status(401).json({
-      success: false,
-      message: "توکن نامعتبر یا منقضی شده است"
-    });
-  }
-}
-
-function adminOnly(req, res, next) {
-  if (!req.user || req.user.role !== "admin") {
-    return res.status(403).json({
-      success: false,
-      message: "دسترسی فقط برای مدیر مجاز است"
-    });
-  }
-
-  next();
-}
-
-// ======================================================
-// HEALTH
-// ======================================================
-
-app.get("/api/health", (req, res) => {
-  res.json({
-    success: true,
-    server: "online",
-    database:
-      mongoose.connection.readyState === 1
-        ? "connected"
-        : "disconnected",
-    time: new Date().toISOString()
-  });
-});
-
-// ======================================================
-// ROOT
-// ======================================================
-
-app.get("/", (req, res) => {
-  res.json({
-    success: true,
-    message: "خیاط‌یار API فعال است",
-    version: "1.0.0",
-    api: "/api/health"
-  });
-});
-
-// ======================================================
-// AUTH - REGISTER
-// ======================================================
-
-app.post("/api/auth/register", async (req, res) => {
-  try {
-    const {
-      name,
-      email,
-      phone,
-      password
-    } = req.body;
-
-    if (!name || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "نام و رمز عبور الزامی است"
-      });
-    }
-
-    if (!email && !phone) {
-      return res.status(400).json({
-        success: false,
-        message: "ایمیل یا شماره تلفن الزامی است"
-      });
-    }
-
-    if (String(password).length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "رمز عبور حداقل ۶ کاراکتر باشد"
-      });
-    }
-
-    const normalizedEmail = email
-      ? String(email).trim().toLowerCase()
-      : undefined;
-
-    const normalizedPhone = phone
-      ? String(phone).trim()
-      : undefined;
-
-    const conditions = [];
-
-    if (normalizedEmail) {
-      conditions.push({
-        email: normalizedEmail
-      });
-    }
-
-    if (normalizedPhone) {
-      conditions.push({
-        phone: normalizedPhone
-      });
-    }
-
-    const existing = await User.findOne({
-      $or: conditions
-    });
-
-    if (existing) {
-      return res.status(409).json({
-        success: false,
-        message: "این ایمیل یا شماره تلفن قبلاً ثبت شده است"
-      });
-    }
-
-    const passwordHash = await bcrypt.hash(
-      String(password),
-      12
-    );
-
-    const user = await User.create({
-      name: String(name).trim(),
-      email: normalizedEmail,
-      phone: normalizedPhone,
-      passwordHash,
-      role: "admin",
-      isActive: true
-    });
-
-    const token = createToken(user);
-
-    res.status(201).json({
-      success: true,
-      message: "ثبت‌نام با موفقیت انجام شد",
-      data: {
-        token,
-        user: safeUser(user)
-      }
-    });
-  } catch (error) {
-    console.error("REGISTER ERROR:", error);
-
-    if (error.code === 11000) {
-      return res.status(409).json({
-        success: false,
-        message: "ایمیل یا شماره تلفن قبلاً استفاده شده است"
-      });
-    }
-
-    res.status(500).json({
-      success: false,
-      message: "خطا در ثبت‌نام"
-    });
-  }
-});
-
-// ======================================================
-// AUTH - LOGIN
-// ======================================================
-
-app.post("/api/auth/login", async (req, res) => {
-  try {
-    const {
-      identifier,
-      password
-    } = req.body;
-
-    if (!identifier || !password) {
-      return res.status(400).json({
-        success: false,
-        message: "ایمیل/شماره تلفن و رمز عبور را وارد کنید"
-      });
-    }
-
-    const value = String(identifier).trim();
-
-    const user = await User.findOne({
-      $or: [
-        {
-          email: value.toLowerCase()
-        },
-        {
-          phone: value
-        }
-      ]
-    }).select("+passwordHash");
+    const user =
+      await User.findById(decoded.userId)
+        .select("-password");
 
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "کاربر پیدا نشد"
-      });
+      return sendError(
+        res,
+        "کاربر پیدا نشد",
+        401
+      );
     }
 
-    if (!user.isActive) {
-      return res.status(403).json({
-        success: false,
-        message: "حساب کاربری غیرفعال است"
-      });
-    }
+    req.user = user;
 
-    const correct = await bcrypt.compare(
-      String(password),
-      user.passwordHash
-    );
+    next();
 
-    if (!correct) {
-      return res.status(401).json({
-        success: false,
-        message: "رمز عبور اشتباه است"
-      });
-    }
-
-    const token = createToken(user);
-
-    res.json({
-      success: true,
-      message: "ورود موفق بود",
-      data: {
-        token,
-        user: safeUser(user)
-      }
-    });
   } catch (error) {
-    console.error("LOGIN ERROR:", error);
 
-    res.status(500).json({
-      success: false,
-      message: "خطا در ورود"
-    });
+    return sendError(
+      res,
+      "توکن نامعتبر یا منقضی شده است",
+      401
+    );
   }
+}
+
+
+/* =========================================================
+   HEALTH
+========================================================= */
+
+app.get("/api/health", (req, res) => {
+
+  const connected =
+    mongoose.connection.readyState === 1;
+
+  return sendSuccess(res, {
+    server: "online",
+    database:
+      connected
+        ? "connected"
+        : "disconnected"
+  });
+
 });
 
-// ======================================================
-// AUTH - ME
-// ======================================================
+
+/* =========================================================
+   REGISTER
+========================================================= */
+
+app.post(
+  "/api/auth/register",
+  async (req, res) => {
+
+    try {
+
+      const {
+        name,
+        email,
+        phone,
+        password,
+        role
+      } = req.body;
+
+      if (!name) {
+        return sendError(
+          res,
+          "نام الزامی است"
+        );
+      }
+
+      if (!email && !phone) {
+        return sendError(
+          res,
+          "ایمیل یا شماره تلفن الزامی است"
+        );
+      }
+
+      if (!password || password.length < 8) {
+        return sendError(
+          res,
+          "رمز عبور باید حداقل ۸ کاراکتر باشد"
+        );
+      }
+
+      if (email) {
+
+        const exists =
+          await User.findOne({
+            email:
+              email.toLowerCase().trim()
+          });
+
+        if (exists) {
+          return sendError(
+            res,
+            "این ایمیل قبلاً ثبت شده است"
+          );
+        }
+      }
+
+      if (phone) {
+
+        const exists =
+          await User.findOne({
+            phone: phone.trim()
+          });
+
+        if (exists) {
+          return sendError(
+            res,
+            "این شماره تلفن قبلاً ثبت شده است"
+          );
+        }
+      }
+
+      const hashedPassword =
+        await bcrypt.hash(
+          password,
+          12
+        );
+
+      const user =
+        await User.create({
+          name: name.trim(),
+          email:
+            email
+              ? email.toLowerCase().trim()
+              : undefined,
+          phone:
+            phone
+              ? phone.trim()
+              : undefined,
+          password: hashedPassword,
+          role: role || "admin"
+        });
+
+      const token =
+        jwt.sign(
+          {
+            userId: user._id.toString()
+          },
+          JWT_SECRET,
+          {
+            expiresIn: "30d"
+          }
+        );
+
+      const safeUser = {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role
+      };
+
+      return sendSuccess(
+        res,
+        {
+          token,
+          user: safeUser
+        },
+        "ثبت‌نام موفق بود"
+      );
+
+    } catch (error) {
+
+      console.error(error);
+
+      return sendError(
+        res,
+        "خطا در ثبت‌نام"
+      );
+    }
+  }
+);
+
+
+/* =========================================================
+   LOGIN
+========================================================= */
+
+app.post(
+  "/api/auth/login",
+  async (req, res) => {
+
+    try {
+
+      const {
+        identifier,
+        password
+      } = req.body;
+
+      if (!identifier || !password) {
+        return sendError(
+          res,
+          "ایمیل/شماره تلفن و رمز عبور الزامی است"
+        );
+      }
+
+      const value =
+        identifier.trim();
+
+      const query = {
+        $or: [
+          {
+            email:
+              value.toLowerCase()
+          },
+          {
+            phone: value
+          }
+        ]
+      };
+
+      const user =
+        await User.findOne(query);
+
+      if (!user) {
+        return sendError(
+          res,
+          "کاربر یا رمز عبور اشتباه است",
+          401
+        );
+      }
+
+      const valid =
+        await bcrypt.compare(
+          password,
+          user.password
+        );
+
+      if (!valid) {
+        return sendError(
+          res,
+          "کاربر یا رمز عبور اشتباه است",
+          401
+        );
+      }
+
+      const token =
+        jwt.sign(
+          {
+            userId: user._id.toString()
+          },
+          JWT_SECRET,
+          {
+            expiresIn: "30d"
+          }
+        );
+
+      const safeUser = {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role
+      };
+
+      return sendSuccess(
+        res,
+        {
+          token,
+          user: safeUser
+        },
+        "ورود موفق بود"
+      );
+
+    } catch (error) {
+
+      console.error(error);
+
+      return sendError(
+        res,
+        "خطا در ورود"
+      );
+    }
+  }
+);
+
+
+/* =========================================================
+   CURRENT USER
+========================================================= */
 
 app.get(
   "/api/auth/me",
-  authRequired,
+  auth,
   async (req, res) => {
-    try {
-      const user = await User.findById(req.user.id);
 
-      if (!user) {
-        return res.status(404).json({
-          success: false,
-          message: "کاربر پیدا نشد"
+    return sendSuccess(
+      res,
+      req.user
+    );
+
+  }
+);
+
+
+/* =========================================================
+   CREATE CUSTOMER + MEASUREMENT + ORDER
+========================================================= */
+
+app.post(
+  "/api/customers/with-order",
+  auth,
+  async (req, res) => {
+
+    const session =
+      await mongoose.startSession();
+
+    try {
+
+      session.startTransaction();
+
+      const {
+        customer,
+        measurement,
+        order
+      } = req.body;
+
+      if (!customer?.name) {
+        throw new Error(
+          "نام مشتری الزامی است"
+        );
+      }
+
+      if (!customer?.phone) {
+        throw new Error(
+          "شماره تلفن مشتری الزامی است"
+        );
+      }
+
+      if (!customer?.gender) {
+        throw new Error(
+          "جنسیت مشتری الزامی است"
+        );
+      }
+
+      /* -------------------------
+         CUSTOMER
+      ------------------------- */
+
+      const customerDoc =
+        new Customer({
+          owner: req.user._id,
+
+          name:
+            customer.name.trim(),
+
+          phone:
+            customer.phone.trim(),
+
+          address:
+            customer.address || "",
+
+          gender:
+            customer.gender,
+
+          notes:
+            customer.notes || ""
+        });
+
+      await customerDoc.save({
+        session
+      });
+
+
+      /* -------------------------
+         MEASUREMENT
+      ------------------------- */
+
+      if (measurement) {
+
+        const measurementDoc =
+          new Measurement({
+
+            owner: req.user._id,
+
+            customer:
+              customerDoc._id,
+
+            gender:
+              measurement.gender ||
+              customer.gender,
+
+            unit:
+              measurement.unit || "cm",
+
+            male:
+              measurement.male || null,
+
+            female:
+              measurement.female || null,
+
+            notes:
+              measurement.notes || ""
+          });
+
+        await measurementDoc.save({
+          session
         });
       }
 
-      res.json({
-        success: true,
-        data: safeUser(user)
-      });
+
+      /* -------------------------
+         ORDER
+      ------------------------- */
+
+      let orderDoc = null;
+
+      if (order) {
+
+        const price =
+          Number(order.price || 0);
+
+        const discount =
+          Number(order.discount || 0);
+
+        const paidAmount =
+          Number(order.paidAmount || 0);
+
+        const finalPrice =
+          Math.max(
+            0,
+            price - discount
+          );
+
+        const remainingAmount =
+          Math.max(
+            0,
+            finalPrice - paidAmount
+          );
+
+        orderDoc =
+          new Order({
+
+            owner:
+              req.user._id,
+
+            customerId:
+              customerDoc._id,
+
+            orderNumber:
+              generateNumber("ORD"),
+
+            description:
+              order.description || "",
+
+            price,
+
+            discount,
+
+            finalPrice,
+
+            paidAmount,
+
+            remainingAmount,
+
+            status:
+              order.status ||
+              "registered"
+          });
+
+        await orderDoc.save({
+          session
+        });
+
+
+        /* -------------------------
+           INITIAL PAYMENT
+        ------------------------- */
+
+        if (paidAmount > 0) {
+
+          const payment =
+            new Payment({
+
+              owner:
+                req.user._id,
+
+              orderId:
+                orderDoc._id,
+
+              customerId:
+                customerDoc._id,
+
+              amount:
+                paidAmount,
+
+              method:
+                order.paymentMethod ||
+                "cash",
+
+              note:
+                "پرداخت اولیه سفارش"
+            });
+
+          await payment.save({
+            session
+          });
+        }
+      }
+
+
+      await session.commitTransaction();
+
+      return sendSuccess(
+        res,
+        {
+          customer:
+            customerDoc,
+
+          order:
+            orderDoc
+        },
+        "مشتری، اندازه‌ها و سفارش با موفقیت ثبت شدند"
+      );
+
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در دریافت اطلاعات"
-      });
+
+      await session.abortTransaction();
+
+      console.error(error);
+
+      return sendError(
+        res,
+        error.message ||
+        "ثبت اطلاعات انجام نشد"
+      );
+
+    } finally {
+
+      session.endSession();
     }
   }
 );
 
-// ======================================================
-// LOGOUT
-// ======================================================
+
+/* =========================================================
+   CUSTOMERS
+========================================================= */
 
 app.post(
-  "/api/auth/logout",
-  authRequired,
-  (req, res) => {
-    res.json({
-      success: true,
-      message: "خروج موفق بود"
-    });
+  "/api/customers",
+  auth,
+  async (req, res) => {
+
+    try {
+
+      const customer =
+        await Customer.create({
+
+          owner:
+            req.user._id,
+
+          name:
+            req.body.name,
+
+          phone:
+            req.body.phone,
+
+          address:
+            req.body.address || "",
+
+          gender:
+            req.body.gender,
+
+          notes:
+            req.body.notes || ""
+        });
+
+      return sendSuccess(
+        res,
+        customer,
+        "مشتری ثبت شد"
+      );
+
+    } catch (error) {
+
+      return sendError(
+        res,
+        error.message
+      );
+    }
   }
 );
 
-// ======================================================
-// CUSTOMERS - LIST
-// ======================================================
+
+/* =========================================================
+   GET CUSTOMERS
+========================================================= */
 
 app.get(
   "/api/customers",
-  authRequired,
+  auth,
   async (req, res) => {
+
     try {
-      const search = String(
-        req.query.search || ""
-      ).trim();
 
-      const gender = req.query.gender;
+      const search =
+        (req.query.search || "").trim();
 
-      const filter = {};
+      const filter = {
+        owner:
+          req.user._id
+      };
 
       if (search) {
+
         filter.$or = [
+
           {
             name: {
               $regex: search,
               $options: "i"
             }
           },
+
           {
             phone: {
               $regex: search,
@@ -464,711 +1272,250 @@ app.get(
         ];
       }
 
-      if (
-        gender === "male" ||
-        gender === "female"
-      ) {
-        filter.gender = gender;
-      }
-
       const customers =
-        await Customer.find(filter)
-          .sort({ createdAt: -1 });
-
-      res.json({
-        success: true,
-        count: customers.length,
-        data: customers
-      });
-    } catch (error) {
-      console.error(error);
-
-      res.status(500).json({
-        success: false,
-        message: "خطا در دریافت مشتریان"
-      });
-    }
-  }
-);
-
-// ======================================================
-// CUSTOMER - GET ONE
-// ======================================================
-
-app.get(
-  "/api/customers/:id",
-  authRequired,
-  async (req, res) => {
-    try {
-      const customer =
-        await Customer.findById(req.params.id);
-
-      if (!customer) {
-        return res.status(404).json({
-          success: false,
-          message: "مشتری پیدا نشد"
-        });
-      }
-
-      const measurements =
-        await Measurement.find({
-          customerId: customer._id
-        }).sort({ createdAt: -1 });
-
-      const orders =
-        await Order.find({
-          customerId: customer._id
-        }).sort({ createdAt: -1 });
-
-      res.json({
-        success: true,
-        data: {
-          customer,
-          measurements,
-          orders
-        }
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در دریافت مشتری"
-      });
-    }
-  }
-);
-
-// ======================================================
-// CUSTOMER - CREATE
-// ======================================================
-
-app.post(
-  "/api/customers",
-  authRequired,
-  async (req, res) => {
-    try {
-      const {
-        name,
-        phone,
-        address,
-        gender,
-        notes
-      } = req.body;
-
-      if (!name || !phone || !gender) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "نام، شماره تلفن و جنسیت الزامی است"
-        });
-      }
-
-      if (
-        gender !== "male" &&
-        gender !== "female"
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "جنسیت نامعتبر است"
-        });
-      }
-
-      const customer =
-        await Customer.create({
-          name: String(name).trim(),
-          phone: String(phone).trim(),
-          address: address || "",
-          gender,
-          notes: notes || ""
-        });
-
-      res.status(201).json({
-        success: true,
-        message: "مشتری با موفقیت ثبت شد",
-        data: customer
-      });
-    } catch (error) {
-      console.error(error);
-
-      res.status(500).json({
-        success: false,
-        message: "خطا در ثبت مشتری"
-      });
-    }
-  }
-);
-
-// ======================================================
-// CUSTOMER - UPDATE
-// ======================================================
-
-app.put(
-  "/api/customers/:id",
-  authRequired,
-  async (req, res) => {
-    try {
-      const allowed = [
-        "name",
-        "phone",
-        "address",
-        "gender",
-        "notes"
-      ];
-
-      const update = {};
-
-      for (const key of allowed) {
-        if (req.body[key] !== undefined) {
-          update[key] = req.body[key];
-        }
-      }
-
-      if (
-        update.gender &&
-        !["male", "female"].includes(
-          update.gender
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-          message: "جنسیت نامعتبر است"
-        });
-      }
-
-      const customer =
-        await Customer.findByIdAndUpdate(
-          req.params.id,
-          update,
-          {
-            new: true,
-            runValidators: true
-          }
-        );
-
-      if (!customer) {
-        return res.status(404).json({
-          success: false,
-          message: "مشتری پیدا نشد"
-        });
-      }
-
-      res.json({
-        success: true,
-        message: "اطلاعات مشتری بروزرسانی شد",
-        data: customer
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در بروزرسانی مشتری"
-      });
-    }
-  }
-);
-
-// ======================================================
-// CUSTOMER - DELETE
-// ======================================================
-
-app.delete(
-  "/api/customers/:id",
-  authRequired,
-  async (req, res) => {
-    try {
-      const customer =
-        await Customer.findByIdAndDelete(
-          req.params.id
-        );
-
-      if (!customer) {
-        return res.status(404).json({
-          success: false,
-          message: "مشتری پیدا نشد"
-        });
-      }
-
-      await Measurement.deleteMany({
-        customerId: customer._id
-      });
-
-      res.json({
-        success: true,
-        message: "مشتری حذف شد"
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در حذف مشتری"
-      });
-    }
-  }
-);
-
-// ======================================================
-// MEASUREMENTS - LIST CUSTOMER
-// ======================================================
-
-app.get(
-  "/api/customers/:customerId/measurements",
-  authRequired,
-  async (req, res) => {
-    try {
-      const customer =
-        await Customer.findById(
-          req.params.customerId
-        );
-
-      if (!customer) {
-        return res.status(404).json({
-          success: false,
-          message: "مشتری پیدا نشد"
-        });
-      }
-
-      const measurements =
-        await Measurement.find({
-          customerId: customer._id
-        }).sort({ createdAt: -1 });
-
-      res.json({
-        success: true,
-        customerGender: customer.gender,
-        data: measurements
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در دریافت اندازه‌ها"
-      });
-    }
-  }
-);
-
-// ======================================================
-// MEASUREMENT - CREATE
-// ======================================================
-
-app.post(
-  "/api/customers/:customerId/measurements",
-  authRequired,
-  async (req, res) => {
-    try {
-      const customer =
-        await Customer.findById(
-          req.params.customerId
-        );
-
-      if (!customer) {
-        return res.status(404).json({
-          success: false,
-          message: "مشتری پیدا نشد"
-        });
-      }
-
-      /*
-        جنسیت همیشه از مشتری گرفته می‌شود.
-        بنابراین نمی‌توان برای مشتری مرد
-        اندازه زنانه ثبت کرد و برعکس.
-      */
-
-      const gender = customer.gender;
-
-      const {
-        unit = "cm",
-        notes = ""
-      } = req.body;
-
-      let measurementData = {};
-
-      if (gender === "male") {
-        measurementData.male =
-          req.body.male || {};
-      }
-
-      if (gender === "female") {
-        measurementData.female =
-          req.body.female || {};
-      }
-
-      const measurement =
-        await Measurement.create({
-          customerId: customer._id,
-          gender,
-          unit,
-          ...measurementData,
-          notes
-        });
-
-      res.status(201).json({
-        success: true,
-        message:
-          gender === "male"
-            ? "اندازه‌های مردانه ثبت شد"
-            : "اندازه‌های زنانه ثبت شد",
-        data: measurement
-      });
-    } catch (error) {
-      console.error(
-        "MEASUREMENT CREATE ERROR:",
-        error
-      );
-
-      res.status(500).json({
-        success: false,
-        message: "خطا در ثبت اندازه‌ها",
-        error: error.message
-      });
-    }
-  }
-);
-
-// ======================================================
-// MEASUREMENT - GET
-// ======================================================
-
-app.get(
-  "/api/measurements/:id",
-  authRequired,
-  async (req, res) => {
-    try {
-      const measurement =
-        await Measurement.findById(
-          req.params.id
-        );
-
-      if (!measurement) {
-        return res.status(404).json({
-          success: false,
-          message: "اندازه پیدا نشد"
-        });
-      }
-
-      res.json({
-        success: true,
-        data: measurement
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در دریافت اندازه"
-      });
-    }
-  }
-);
-
-// ======================================================
-// MEASUREMENT - UPDATE
-// ======================================================
-
-app.put(
-  "/api/measurements/:id",
-  authRequired,
-  async (req, res) => {
-    try {
-      const old =
-        await Measurement.findById(
-          req.params.id
-        );
-
-      if (!old) {
-        return res.status(404).json({
-          success: false,
-          message: "اندازه پیدا نشد"
-        });
-      }
-
-      const update = {
-        unit:
-          req.body.unit || old.unit,
-        notes:
-          req.body.notes !== undefined
-            ? req.body.notes
-            : old.notes
-      };
-
-      if (old.gender === "male") {
-        update.male =
-          req.body.male || {};
-      }
-
-      if (old.gender === "female") {
-        update.female =
-          req.body.female || {};
-      }
-
-      const measurement =
-        await Measurement.findByIdAndUpdate(
-          req.params.id,
-          update,
-          {
-            new: true,
-            runValidators: true
-          }
-        );
-
-      res.json({
-        success: true,
-        message: "اندازه‌ها بروزرسانی شد",
-        data: measurement
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در بروزرسانی اندازه"
-      });
-    }
-  }
-);
-
-// ======================================================
-// MEASUREMENT - DELETE
-// ======================================================
-
-app.delete(
-  "/api/measurements/:id",
-  authRequired,
-  async (req, res) => {
-    try {
-      const result =
-        await Measurement.findByIdAndDelete(
-          req.params.id
-        );
-
-      if (!result) {
-        return res.status(404).json({
-          success: false,
-          message: "اندازه پیدا نشد"
-        });
-      }
-
-      res.json({
-        success: true,
-        message: "اندازه حذف شد"
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در حذف اندازه"
-      });
-    }
-  }
-);
-
-// ======================================================
-// ORDERS - LIST
-// ======================================================
-
-app.get(
-  "/api/orders",
-  authRequired,
-  async (req, res) => {
-    try {
-      const filter = {};
-
-      if (req.query.status) {
-        filter.status = req.query.status;
-      }
-
-      if (req.query.customerId) {
-        filter.customerId =
-          req.query.customerId;
-      }
-
-      const orders =
-        await Order.find(filter)
-          .populate(
-            "customerId",
-            "name phone gender"
-          )
-          .populate(
-            "measurementId"
-          )
+        await Customer
+          .find(filter)
           .sort({
             createdAt: -1
           });
 
-      res.json({
-        success: true,
-        count: orders.length,
-        data: orders
-      });
+      return sendSuccess(
+        res,
+        customers
+      );
+
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در دریافت سفارش‌ها"
-      });
+
+      return sendError(
+        res,
+        error.message
+      );
     }
   }
 );
 
-// ======================================================
-// ORDER - CREATE
-// ======================================================
 
-app.post(
-  "/api/orders",
-  authRequired,
-  async (req, res) => {
-    try {
-      const {
-        customerId,
-        measurementId,
-        description = "",
-        status = "registered",
-        price = 0,
-        discount = 0,
-        paidAmount = 0,
-        deliveryDate,
-        notes = ""
-      } = req.body;
-
-      if (!customerId) {
-        return res.status(400).json({
-          success: false,
-          message: "مشتری را انتخاب کنید"
-        });
-      }
-
-      const customer =
-        await Customer.findById(customerId);
-
-      if (!customer) {
-        return res.status(404).json({
-          success: false,
-          message: "مشتری پیدا نشد"
-        });
-      }
-
-      const finalPrice =
-        Math.max(
-          0,
-          Number(price) - Number(discount)
-        );
-
-      const remainingAmount =
-        Math.max(
-          0,
-          finalPrice - Number(paidAmount)
-        );
-
-      const orderNumber =
-        "ORD-" +
-        Date.now().toString();
-
-      const order =
-        await Order.create({
-          orderNumber,
-          customerId,
-          measurementId:
-            measurementId || undefined,
-          description,
-          status,
-          price: Number(price),
-          discount: Number(discount),
-          finalPrice,
-          paidAmount: Number(paidAmount),
-          remainingAmount,
-          deliveryDate:
-            deliveryDate || undefined,
-          notes
-        });
-
-      res.status(201).json({
-        success: true,
-        message: "سفارش ثبت شد",
-        data: order
-      });
-    } catch (error) {
-      console.error(error);
-
-      res.status(500).json({
-        success: false,
-        message: "خطا در ثبت سفارش"
-      });
-    }
-  }
-);
-
-// ======================================================
-// ORDER - GET ONE
-// ======================================================
+/* =========================================================
+   GET CUSTOMER
+========================================================= */
 
 app.get(
-  "/api/orders/:id",
-  authRequired,
+  "/api/customers/:id",
+  auth,
   async (req, res) => {
-    try {
-      const order =
-        await Order.findById(
-          req.params.id
-        )
-          .populate("customerId")
-          .populate("measurementId");
 
-      if (!order) {
-        return res.status(404).json({
-          success: false,
-          message: "سفارش پیدا نشد"
+    try {
+
+      const customer =
+        await Customer.findOne({
+          _id: req.params.id,
+          owner: req.user._id
         });
+
+      if (!customer) {
+        return sendError(
+          res,
+          "مشتری پیدا نشد",
+          404
+        );
       }
 
-      const payments =
-        await Payment.find({
-          orderId: order._id
+      const measurements =
+        await Measurement.find({
+          customer: customer._id,
+          owner: req.user._id
         }).sort({
           createdAt: -1
         });
 
-      res.json({
-        success: true,
-        data: {
-          order,
-          payments
+      const orders =
+        await Order.find({
+          customerId: customer._id,
+          owner: req.user._id
+        }).sort({
+          createdAt: -1
+        });
+
+      return sendSuccess(
+        res,
+        {
+          customer,
+          measurements,
+          orders
         }
-      });
+      );
+
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در دریافت سفارش"
-      });
+
+      return sendError(
+        res,
+        error.message
+      );
     }
   }
 );
 
-// ======================================================
-// ORDER - UPDATE
-// ======================================================
 
-app.put(
-  "/api/orders/:id",
-  authRequired,
+/* =========================================================
+   DELETE CUSTOMER
+========================================================= */
+
+app.delete(
+  "/api/customers/:id",
+  auth,
   async (req, res) => {
-    try {
-      const order =
-        await Order.findById(
-          req.params.id
-        );
 
-      if (!order) {
-        return res.status(404).json({
-          success: false,
-          message: "سفارش پیدا نشد"
+    try {
+
+      const customer =
+        await Customer.findOne({
+          _id: req.params.id,
+          owner: req.user._id
         });
+
+      if (!customer) {
+        return sendError(
+          res,
+          "مشتری پیدا نشد",
+          404
+        );
+      }
+
+      await Measurement.deleteMany({
+        customer: customer._id,
+        owner: req.user._id
+      });
+
+      await Order.deleteMany({
+        customerId: customer._id,
+        owner: req.user._id
+      });
+
+      await Payment.deleteMany({
+        customerId: customer._id,
+        owner: req.user._id
+      });
+
+      await customer.deleteOne();
+
+      return sendSuccess(
+        res,
+        null,
+        "مشتری حذف شد"
+      );
+
+    } catch (error) {
+
+      return sendError(
+        res,
+        error.message
+      );
+    }
+  }
+);
+
+
+/* =========================================================
+   MEASUREMENTS
+========================================================= */
+
+app.post(
+  "/api/customers/:id/measurements",
+  auth,
+  async (req, res) => {
+
+    try {
+
+      const customer =
+        await Customer.findOne({
+          _id: req.params.id,
+          owner: req.user._id
+        });
+
+      if (!customer) {
+        return sendError(
+          res,
+          "مشتری پیدا نشد",
+          404
+        );
+      }
+
+      const measurement =
+        await Measurement.create({
+
+          owner:
+            req.user._id,
+
+          customer:
+            customer._id,
+
+          gender:
+            req.body.gender ||
+            customer.gender,
+
+          unit:
+            req.body.unit || "cm",
+
+          male:
+            req.body.male || null,
+
+          female:
+            req.body.female || null,
+
+          notes:
+            req.body.notes || ""
+        });
+
+      return sendSuccess(
+        res,
+        measurement,
+        "اندازه‌ها ثبت شد"
+      );
+
+    } catch (error) {
+
+      return sendError(
+        res,
+        error.message
+      );
+    }
+  }
+);
+
+
+/* =========================================================
+   ORDERS
+========================================================= */
+
+app.post(
+  "/api/orders",
+  auth,
+  async (req, res) => {
+
+    try {
+
+      const customer =
+        await Customer.findOne({
+          _id: req.body.customerId,
+          owner: req.user._id
+        });
+
+      if (!customer) {
+        return sendError(
+          res,
+          "مشتری متعلق به این حساب نیست",
+          403
+        );
       }
 
       const price =
-        req.body.price !== undefined
-          ? Number(req.body.price)
-          : order.price;
+        Number(req.body.price || 0);
 
       const discount =
-        req.body.discount !== undefined
-          ? Number(req.body.discount)
-          : order.discount;
+        Number(req.body.discount || 0);
 
       const paidAmount =
-        req.body.paidAmount !== undefined
-          ? Number(req.body.paidAmount)
-          : order.paidAmount;
+        Number(req.body.paidAmount || 0);
 
       const finalPrice =
         Math.max(
@@ -1182,436 +1529,221 @@ app.put(
           finalPrice - paidAmount
         );
 
-      const update = {
-        ...req.body,
-        price,
-        discount,
-        paidAmount,
-        finalPrice,
-        remainingAmount
-      };
-
-      delete update._id;
-
-      const updated =
-        await Order.findByIdAndUpdate(
-          req.params.id,
-          update,
-          {
-            new: true,
-            runValidators: true
-          }
-        );
-
-      res.json({
-        success: true,
-        message: "سفارش بروزرسانی شد",
-        data: updated
-      });
-    } catch (error) {
-      console.error(error);
-
-      res.status(500).json({
-        success: false,
-        message: "خطا در بروزرسانی سفارش"
-      });
-    }
-  }
-);
-
-// ======================================================
-// ORDER - DELETE
-// ======================================================
-
-app.delete(
-  "/api/orders/:id",
-  authRequired,
-  async (req, res) => {
-    try {
       const order =
-        await Order.findByIdAndDelete(
-          req.params.id
-        );
+        await Order.create({
 
-      if (!order) {
-        return res.status(404).json({
-          success: false,
-          message: "سفارش پیدا نشد"
+          owner:
+            req.user._id,
+
+          customerId:
+            customer._id,
+
+          orderNumber:
+            generateNumber("ORD"),
+
+          description:
+            req.body.description || "",
+
+          price,
+
+          discount,
+
+          finalPrice,
+
+          paidAmount,
+
+          remainingAmount,
+
+          status:
+            req.body.status ||
+            "registered"
+        });
+
+      if (paidAmount > 0) {
+
+        await Payment.create({
+
+          owner:
+            req.user._id,
+
+          orderId:
+            order._id,
+
+          customerId:
+            customer._id,
+
+          amount:
+            paidAmount,
+
+          method:
+            req.body.paymentMethod ||
+            "cash",
+
+          note:
+            "پرداخت اولیه"
         });
       }
 
-      await Payment.deleteMany({
-        orderId: order._id
-      });
+      return sendSuccess(
+        res,
+        order,
+        "سفارش ثبت شد"
+      );
 
-      res.json({
-        success: true,
-        message: "سفارش حذف شد"
-      });
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در حذف سفارش"
-      });
+
+      return sendError(
+        res,
+        error.message
+      );
     }
   }
 );
 
-// ======================================================
-// PAYMENTS - LIST
-// ======================================================
+
+/* =========================================================
+   GET ORDERS
+========================================================= */
 
 app.get(
-  "/api/payments",
-  authRequired,
+  "/api/orders",
+  auth,
   async (req, res) => {
+
     try {
-      const filter = {};
 
-      if (req.query.customerId) {
-        filter.customerId =
-          req.query.customerId;
-      }
-
-      if (req.query.orderId) {
-        filter.orderId =
-          req.query.orderId;
-      }
-
-      const payments =
-        await Payment.find(filter)
+      const orders =
+        await Order
+          .find({
+            owner:
+              req.user._id
+          })
           .populate(
             "customerId",
             "name phone"
           )
-          .populate(
-            "orderId",
-            "orderNumber finalPrice"
-          )
           .sort({
             createdAt: -1
           });
 
-      res.json({
-        success: true,
-        data: payments
-      });
+      return sendSuccess(
+        res,
+        orders
+      );
+
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در دریافت پرداخت‌ها"
-      });
+
+      return sendError(
+        res,
+        error.message
+      );
     }
   }
 );
 
-// ======================================================
-// PAYMENT - CREATE
-// ======================================================
+
+/* =========================================================
+   PAYMENTS
+========================================================= */
 
 app.post(
   "/api/payments",
-  authRequired,
+  auth,
   async (req, res) => {
-    try {
-      const {
-        customerId,
-        orderId,
-        amount,
-        method = "cash",
-        note = ""
-      } = req.body;
 
-      if (
-        !customerId ||
-        !orderId ||
-        amount === undefined
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "مشتری، سفارش و مبلغ الزامی است"
-        });
-      }
+    try {
 
       const order =
-        await Order.findById(orderId);
+        await Order.findOne({
+          _id: req.body.orderId,
+          owner: req.user._id
+        });
 
       if (!order) {
-        return res.status(404).json({
-          success: false,
-          message: "سفارش پیدا نشد"
-        });
+        return sendError(
+          res,
+          "سفارش متعلق به این حساب نیست",
+          403
+        );
+      }
+
+      const amount =
+        Number(req.body.amount || 0);
+
+      if (amount <= 0) {
+        return sendError(
+          res,
+          "مبلغ پرداخت معتبر نیست"
+        );
       }
 
       const payment =
         await Payment.create({
-          customerId,
-          orderId,
-          amount: Number(amount),
-          method,
-          note,
-          createdBy: req.user.id
+
+          owner:
+            req.user._id,
+
+          orderId:
+            order._id,
+
+          customerId:
+            order.customerId,
+
+          amount,
+
+          method:
+            req.body.method ||
+            "cash",
+
+          note:
+            req.body.note || ""
         });
 
-      const totalPayments =
-        await Payment.aggregate([
-          {
-            $match: {
-              orderId:
-                new mongoose.Types.ObjectId(
-                  orderId
-                )
-            }
-          },
-          {
-            $group: {
-              _id: null,
-              total: {
-                $sum: "$amount"
-              }
-            }
-          }
-        ]);
-
-      const totalPaid =
-        totalPayments[0]?.total || 0;
-
-      order.paidAmount = totalPaid;
+      order.paidAmount += amount;
 
       order.remainingAmount =
         Math.max(
           0,
-          order.finalPrice - totalPaid
+          order.finalPrice -
+          order.paidAmount
         );
 
       await order.save();
 
-      res.status(201).json({
-        success: true,
-        message: "پرداخت ثبت شد",
-        data: payment,
-        order: {
-          paidAmount:
-            order.paidAmount,
-          remainingAmount:
-            order.remainingAmount
-        }
-      });
-    } catch (error) {
-      console.error(error);
+      return sendSuccess(
+        res,
+        payment,
+        "پرداخت ثبت شد"
+      );
 
-      res.status(500).json({
-        success: false,
-        message: "خطا در ثبت پرداخت"
-      });
+    } catch (error) {
+
+      return sendError(
+        res,
+        error.message
+      );
     }
   }
 );
 
-// ======================================================
-// EXPENSES
-// ======================================================
+
+/* =========================================================
+   GET PAYMENTS
+========================================================= */
 
 app.get(
-  "/api/expenses",
-  authRequired,
+  "/api/payments",
+  auth,
   async (req, res) => {
+
     try {
-      const expenses =
-        await Expense.find()
-          .sort({
-            createdAt: -1
-          });
 
-      res.json({
-        success: true,
-        data: expenses
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در دریافت هزینه‌ها"
-      });
-    }
-  }
-);
-
-app.post(
-  "/api/expenses",
-  authRequired,
-  async (req, res) => {
-    try {
-      const expense =
-        await Expense.create({
-          title: req.body.title,
-          amount: Number(
-            req.body.amount || 0
-          ),
-          category:
-            req.body.category || "other",
-          description:
-            req.body.description || "",
-          createdBy: req.user.id
-        });
-
-      res.status(201).json({
-        success: true,
-        message: "هزینه ثبت شد",
-        data: expense
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در ثبت هزینه"
-      });
-    }
-  }
-);
-
-// ======================================================
-// INVENTORY
-// ======================================================
-
-app.get(
-  "/api/inventory",
-  authRequired,
-  async (req, res) => {
-    try {
-      const items =
-        await Inventory.find()
-          .sort({
-            createdAt: -1
-          });
-
-      res.json({
-        success: true,
-        data: items
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در دریافت انبار"
-      });
-    }
-  }
-);
-
-app.post(
-  "/api/inventory",
-  authRequired,
-  async (req, res) => {
-    try {
-      const item =
-        await Inventory.create({
-          name: req.body.name,
-          category:
-            req.body.category || "other",
-          quantity:
-            Number(req.body.quantity || 0),
-          unit:
-            req.body.unit || "عدد",
-          minimumStock:
-            Number(
-              req.body.minimumStock || 0
-            ),
-          price:
-            Number(req.body.price || 0),
-          notes:
-            req.body.notes || ""
-        });
-
-      res.status(201).json({
-        success: true,
-        message: "مورد انبار ثبت شد",
-        data: item
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در ثبت انبار"
-      });
-    }
-  }
-);
-
-app.put(
-  "/api/inventory/:id",
-  authRequired,
-  async (req, res) => {
-    try {
-      const item =
-        await Inventory.findByIdAndUpdate(
-          req.params.id,
-          req.body,
-          {
-            new: true,
-            runValidators: true
-          }
-        );
-
-      if (!item) {
-        return res.status(404).json({
-          success: false,
-          message: "مورد انبار پیدا نشد"
-        });
-      }
-
-      res.json({
-        success: true,
-        message: "انبار بروزرسانی شد",
-        data: item
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در بروزرسانی انبار"
-      });
-    }
-  }
-);
-
-app.delete(
-  "/api/inventory/:id",
-  authRequired,
-  async (req, res) => {
-    try {
-      const item =
-        await Inventory.findByIdAndDelete(
-          req.params.id
-        );
-
-      if (!item) {
-        return res.status(404).json({
-          success: false,
-          message: "مورد انبار پیدا نشد"
-        });
-      }
-
-      res.json({
-        success: true,
-        message: "مورد انبار حذف شد"
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در حذف انبار"
-      });
-    }
-  }
-);
-
-// ======================================================
-// INVOICES
-// ======================================================
-
-app.get(
-  "/api/invoices",
-  authRequired,
-  async (req, res) => {
-    try {
-      const invoices =
-        await Invoice.find()
+      const payments =
+        await Payment
+          .find({
+            owner:
+              req.user._id
+          })
           .populate(
             "customerId",
             "name phone"
@@ -1624,382 +1756,518 @@ app.get(
             createdAt: -1
           });
 
-      res.json({
-        success: true,
-        data: invoices
-      });
+      return sendSuccess(
+        res,
+        payments
+      );
+
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در دریافت فاکتورها"
-      });
+
+      return sendError(
+        res,
+        error.message
+      );
     }
   }
 );
 
-// ======================================================
-// INVOICE - CREATE
-// ======================================================
+
+/* =========================================================
+   EXPENSES
+========================================================= */
+
+app.post(
+  "/api/expenses",
+  auth,
+  async (req, res) => {
+
+    try {
+
+      const expense =
+        await Expense.create({
+
+          owner:
+            req.user._id,
+
+          title:
+            req.body.title,
+
+          amount:
+            Number(req.body.amount || 0),
+
+          category:
+            req.body.category || "",
+
+          description:
+            req.body.description || ""
+        });
+
+      return sendSuccess(
+        res,
+        expense,
+        "هزینه ثبت شد"
+      );
+
+    } catch (error) {
+
+      return sendError(
+        res,
+        error.message
+      );
+    }
+  }
+);
+
+
+app.get(
+  "/api/expenses",
+  auth,
+  async (req, res) => {
+
+    try {
+
+      const expenses =
+        await Expense
+          .find({
+            owner:
+              req.user._id
+          })
+          .sort({
+            createdAt: -1
+          });
+
+      return sendSuccess(
+        res,
+        expenses
+      );
+
+    } catch (error) {
+
+      return sendError(
+        res,
+        error.message
+      );
+    }
+  }
+);
+
+
+/* =========================================================
+   INVENTORY
+========================================================= */
+
+app.post(
+  "/api/inventory",
+  auth,
+  async (req, res) => {
+
+    try {
+
+      const item =
+        await Inventory.create({
+
+          owner:
+            req.user._id,
+
+          name:
+            req.body.name,
+
+          category:
+            req.body.category || "",
+
+          quantity:
+            Number(req.body.quantity || 0),
+
+          unit:
+            req.body.unit || "عدد",
+
+          minimumStock:
+            Number(
+              req.body.minimumStock || 0
+            ),
+
+          price:
+            Number(req.body.price || 0)
+        });
+
+      return sendSuccess(
+        res,
+        item,
+        "کالا ثبت شد"
+      );
+
+    } catch (error) {
+
+      return sendError(
+        res,
+        error.message
+      );
+    }
+  }
+);
+
+
+app.get(
+  "/api/inventory",
+  auth,
+  async (req, res) => {
+
+    try {
+
+      const items =
+        await Inventory
+          .find({
+            owner:
+              req.user._id
+          })
+          .sort({
+            createdAt: -1
+          });
+
+      return sendSuccess(
+        res,
+        items
+      );
+
+    } catch (error) {
+
+      return sendError(
+        res,
+        error.message
+      );
+    }
+  }
+);
+
+
+/* =========================================================
+   EMPLOYEES
+========================================================= */
+
+app.post(
+  "/api/employees",
+  auth,
+  async (req, res) => {
+
+    try {
+
+      const employee =
+        await Employee.create({
+
+          owner:
+            req.user._id,
+
+          name:
+            req.body.name,
+
+          phone:
+            req.body.phone || "",
+
+          position:
+            req.body.position || "",
+
+          salary:
+            Number(req.body.salary || 0)
+        });
+
+      return sendSuccess(
+        res,
+        employee,
+        "کارمند ثبت شد"
+      );
+
+    } catch (error) {
+
+      return sendError(
+        res,
+        error.message
+      );
+    }
+  }
+);
+
+
+app.get(
+  "/api/employees",
+  auth,
+  async (req, res) => {
+
+    try {
+
+      const employees =
+        await Employee
+          .find({
+            owner:
+              req.user._id
+          })
+          .sort({
+            createdAt: -1
+          });
+
+      return sendSuccess(
+        res,
+        employees
+      );
+
+    } catch (error) {
+
+      return sendError(
+        res,
+        error.message
+      );
+    }
+  }
+);
+
+
+/* =========================================================
+   INVOICES
+========================================================= */
 
 app.post(
   "/api/invoices",
-  authRequired,
+  auth,
   async (req, res) => {
+
     try {
-      const {
-        orderId,
-        customerId,
-        subtotal = 0,
-        discount = 0,
-        paid = 0,
-        notes = ""
-      } = req.body;
 
-      const total =
-        Math.max(
-          0,
-          Number(subtotal) -
-            Number(discount)
+      const order =
+        await Order.findOne({
+          _id: req.body.orderId,
+          owner: req.user._id
+        });
+
+      if (!order) {
+        return sendError(
+          res,
+          "سفارش پیدا نشد",
+          404
         );
-
-      const remaining =
-        Math.max(
-          0,
-          total - Number(paid)
-        );
-
-      const invoiceNumber =
-        "INV-" +
-        Date.now().toString();
+      }
 
       const invoice =
         await Invoice.create({
-          invoiceNumber,
-          orderId,
-          customerId,
-          subtotal:
-            Number(subtotal),
-          discount:
-            Number(discount),
-          total,
+
+          owner:
+            req.user._id,
+
+          orderId:
+            order._id,
+
+          invoiceNumber:
+            generateNumber("INV"),
+
+          total:
+            order.finalPrice,
+
           paid:
-            Number(paid),
-          remaining,
-          notes
+            order.paidAmount,
+
+          remaining:
+            order.remainingAmount
         });
 
-      res.status(201).json({
-        success: true,
-        message: "فاکتور ایجاد شد",
-        data: invoice
-      });
-    } catch (error) {
-      console.error(error);
+      return sendSuccess(
+        res,
+        invoice,
+        "فاکتور ساخته شد"
+      );
 
-      res.status(500).json({
-        success: false,
-        message: "خطا در ایجاد فاکتور"
-      });
+    } catch (error) {
+
+      return sendError(
+        res,
+        error.message
+      );
     }
   }
 );
 
-// ======================================================
-// EMPLOYEES
-// ======================================================
 
 app.get(
-  "/api/employees",
-  authRequired,
+  "/api/invoices",
+  auth,
   async (req, res) => {
+
     try {
-      const employees =
-        await Employee.find()
+
+      const invoices =
+        await Invoice
+          .find({
+            owner:
+              req.user._id
+          })
+          .populate(
+            "orderId",
+            "orderNumber customerId"
+          )
           .sort({
             createdAt: -1
           });
 
-      res.json({
-        success: true,
-        data: employees
-      });
+      return sendSuccess(
+        res,
+        invoices
+      );
+
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در دریافت کارمندان"
-      });
+
+      return sendError(
+        res,
+        error.message
+      );
     }
   }
 );
 
-app.post(
-  "/api/employees",
-  authRequired,
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+app.get(
+  "/api/settings",
+  auth,
   async (req, res) => {
+
     try {
-      const employee =
-        await Employee.create({
-          name: req.body.name,
-          phone:
-            req.body.phone || "",
-          position:
-            req.body.position || "",
-          salary:
-            Number(req.body.salary || 0),
-          status:
-            req.body.status || "active",
-          notes:
-            req.body.notes || ""
+
+      let settings =
+        await Settings.findOne({
+          owner:
+            req.user._id
         });
 
-      res.status(201).json({
-        success: true,
-        message: "کارمند ثبت شد",
-        data: employee
-      });
+      if (!settings) {
+
+        settings =
+          await Settings.create({
+            owner:
+              req.user._id
+          });
+      }
+
+      return sendSuccess(
+        res,
+        settings
+      );
+
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در ثبت کارمند"
-      });
+
+      return sendError(
+        res,
+        error.message
+      );
     }
   }
 );
 
+
 app.put(
-  "/api/employees/:id",
-  authRequired,
+  "/api/settings",
+  auth,
   async (req, res) => {
+
     try {
-      const employee =
-        await Employee.findByIdAndUpdate(
-          req.params.id,
-          req.body,
+
+      const settings =
+        await Settings.findOneAndUpdate(
+          {
+            owner:
+              req.user._id
+          },
+          {
+            $set: {
+              shopName:
+                req.body.shopName || "",
+
+              ownerName:
+                req.body.ownerName || "",
+
+              phone:
+                req.body.phone || "",
+
+              address:
+                req.body.address || "",
+
+              currency:
+                req.body.currency || "AFN",
+
+              invoiceFooter:
+                req.body.invoiceFooter || ""
+            }
+          },
           {
             new: true,
-            runValidators: true
+            upsert: true
           }
         );
 
-      if (!employee) {
-        return res.status(404).json({
-          success: false,
-          message: "کارمند پیدا نشد"
-        });
-      }
+      return sendSuccess(
+        res,
+        settings,
+        "تنظیمات ذخیره شد"
+      );
 
-      res.json({
-        success: true,
-        message: "اطلاعات کارمند بروزرسانی شد",
-        data: employee
-      });
     } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در بروزرسانی کارمند"
-      });
+
+      return sendError(
+        res,
+        error.message
+      );
     }
   }
 );
 
-app.delete(
-  "/api/employees/:id",
-  authRequired,
-  async (req, res) => {
-    try {
-      const employee =
-        await Employee.findByIdAndDelete(
-          req.params.id
-        );
 
-      if (!employee) {
-        return res.status(404).json({
-          success: false,
-          message: "کارمند پیدا نشد"
-        });
-      }
-
-      res.json({
-        success: true,
-        message: "کارمند حذف شد"
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در حذف کارمند"
-      });
-    }
-  }
-);
-
-// ======================================================
-// NOTIFICATIONS
-// ======================================================
-
-app.get(
-  "/api/notifications",
-  authRequired,
-  async (req, res) => {
-    try {
-      const notifications =
-        await Notification.find({
-          userId: req.user.id
-        })
-          .sort({
-            createdAt: -1
-          })
-          .limit(100);
-
-      res.json({
-        success: true,
-        data: notifications
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در دریافت اعلان‌ها"
-      });
-    }
-  }
-);
-
-// ======================================================
-// NOTIFICATION READ
-// ======================================================
-
-app.put(
-  "/api/notifications/:id/read",
-  authRequired,
-  async (req, res) => {
-    try {
-      const notification =
-        await Notification.findOneAndUpdate(
-          {
-            _id: req.params.id,
-            userId: req.user.id
-          },
-          {
-            read: true
-          },
-          {
-            new: true
-          }
-        );
-
-      if (!notification) {
-        return res.status(404).json({
-          success: false,
-          message: "اعلان پیدا نشد"
-        });
-      }
-
-      res.json({
-        success: true,
-        data: notification
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در بروزرسانی اعلان"
-      });
-    }
-  }
-);
-
-// ======================================================
-// SETTINGS - GET
-// ======================================================
-
-app.get(
-  "/api/settings",
-  authRequired,
-  async (req, res) => {
-    try {
-      let setting =
-        await Setting.findOne();
-
-      if (!setting) {
-        setting =
-          await Setting.create({
-            shopName: "خیاط‌یار",
-            currency: "AFN"
-          });
-      }
-
-      res.json({
-        success: true,
-        data: setting
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در دریافت تنظیمات"
-      });
-    }
-  }
-);
-
-// ======================================================
-// SETTINGS - UPDATE
-// ======================================================
-
-app.put(
-  "/api/settings",
-  authRequired,
-  async (req, res) => {
-    try {
-      let setting =
-        await Setting.findOne();
-
-      if (!setting) {
-        setting =
-          await Setting.create(req.body);
-      } else {
-        setting =
-          await Setting.findByIdAndUpdate(
-            setting._id,
-            req.body,
-            {
-              new: true,
-              runValidators: true
-            }
-          );
-      }
-
-      res.json({
-        success: true,
-        message: "تنظیمات ذخیره شد",
-        data: setting
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: "خطا در ذخیره تنظیمات"
-      });
-    }
-  }
-);
-
-// ======================================================
-// DASHBOARD REPORT
-// ======================================================
+/* =========================================================
+   DASHBOARD
+========================================================= */
 
 app.get(
   "/api/reports/dashboard",
-  authRequired,
+  auth,
   async (req, res) => {
+
     try {
-      const [
-        customers,
-        orders,
-        expenses,
-        inventory
-      ] = await Promise.all([
-        Customer.countDocuments(),
 
-        Order.countDocuments(),
+      const now = new Date();
 
-        Expense.aggregate([
+      const startToday =
+        new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate()
+        );
+
+      const startMonth =
+        new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          1
+        );
+
+
+      /* -------------------------
+         TODAY SALES
+      ------------------------- */
+
+      const todayPayments =
+        await Payment.aggregate([
+          {
+            $match: {
+              owner:
+                new mongoose.Types.ObjectId(
+                  req.user._id
+                ),
+
+              createdAt: {
+                $gte:
+                  startToday
+              }
+            }
+          },
+
           {
             $group: {
               _id: null,
@@ -2008,145 +2276,147 @@ app.get(
               }
             }
           }
-        ]),
+        ]);
 
-        Inventory.countDocuments()
-      ]);
 
-      const orderMoney =
-        await Order.aggregate([
+      /* -------------------------
+         MONTH SALES
+      ------------------------- */
+
+      const monthPayments =
+        await Payment.aggregate([
+          {
+            $match: {
+              owner:
+                new mongoose.Types.ObjectId(
+                  req.user._id
+                ),
+
+              createdAt: {
+                $gte:
+                  startMonth
+              }
+            }
+          },
+
           {
             $group: {
               _id: null,
-              totalSales: {
-                $sum: "$finalPrice"
-              },
-              totalPaid: {
-                $sum: "$paidAmount"
-              },
-              totalRemaining: {
-                $sum: "$remainingAmount"
+              total: {
+                $sum: "$amount"
               }
             }
           }
         ]);
 
-      const money =
-        orderMoney[0] || {
-          totalSales: 0,
-          totalPaid: 0,
-          totalRemaining: 0
-        };
 
-      const totalExpenses =
-        expenses[0]?.total || 0;
+      /* -------------------------
+         ACTIVE ORDERS
+      ------------------------- */
 
-      res.json({
-        success: true,
-        data: {
-          customers,
-          orders,
-          inventory,
-          totalSales:
-            money.totalSales,
-          totalPaid:
-            money.totalPaid,
-          totalRemaining:
-            money.totalRemaining,
-          totalExpenses,
-          profit:
-            money.totalPaid -
-            totalExpenses
+      const activeOrders =
+        await Order.countDocuments({
+          owner:
+            req.user._id,
+
+          status: {
+            $nin: [
+              "delivered",
+              "cancelled"
+            ]
+          }
+        });
+
+
+      /* -------------------------
+         CUSTOMERS
+      ------------------------- */
+
+      const customers =
+        await Customer.countDocuments({
+          owner:
+            req.user._id
+        });
+
+
+      return sendSuccess(
+        res,
+        {
+
+          salesToday:
+            todayPayments[0]?.total ||
+            0,
+
+          salesMonth:
+            monthPayments[0]?.total ||
+            0,
+
+          activeOrders,
+
+          customers
         }
-      });
+      );
+
     } catch (error) {
+
       console.error(error);
 
-      res.status(500).json({
-        success: false,
-        message: "خطا در دریافت گزارش"
-      });
+      return sendError(
+        res,
+        "خطا در دریافت داشبورد"
+      );
     }
   }
 );
 
-// ======================================================
-// 404 API
-// ======================================================
 
-app.use("/api", (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: "API مورد نظر پیدا نشد",
-    path: req.originalUrl
-  });
-});
+/* =========================================================
+   404
+========================================================= */
 
-// ======================================================
-// GLOBAL ERROR
-// ======================================================
+app.use(
+  (req, res) => {
 
-app.use((error, req, res, next) => {
-  console.error(
-    "GLOBAL ERROR:",
-    error
-  );
+    return res.status(404).json({
+      success: false,
+      message:
+        "مسیر مورد نظر پیدا نشد"
+    });
 
-  res.status(500).json({
-    success: false,
-    message: "خطای داخلی سرور"
-  });
-});
-
-// ======================================================
-// START DATABASE + SERVER
-// ======================================================
-
-async function startServer() {
-  try {
-    console.log("=================================");
-    console.log("🚀 KHAYAT-YAR SERVER");
-    console.log("=================================");
-
-    console.log("🔄 Connecting MongoDB...");
-
-    await mongoose.connect(
-      MONGODB_URI,
-      {
-        serverSelectionTimeoutMS: 15000
-      }
-    );
-
-    console.log("✅ MongoDB Connected");
-
-    app.listen(
-      PORT,
-      "0.0.0.0",
-      () => {
-        console.log(
-          `🚀 Server running on port ${PORT}`
-        );
-
-        console.log(
-          `🌐 http://localhost:${PORT}`
-        );
-
-        console.log(
-          `❤️ Health: /api/health`
-        );
-      }
-    );
-  } catch (error) {
-    console.error(
-      "❌ DATABASE CONNECTION FAILED"
-    );
-
-    console.error(
-      error.message
-    );
-
-    process.exit(1);
   }
-}
+);
 
-startServer();
+
+/* =========================================================
+   ERROR HANDLER
+========================================================= */
+
+app.use(
+  (error, req, res, next) => {
+
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message:
+        "خطای داخلی سرور"
+    });
+
+  }
+);
+
+
+/* =========================================================
+   START SERVER
+========================================================= */
+
+app.listen(
+  PORT,
+  () => {
+
+    console.log(
+      `KhayatYar server running on port ${PORT}`
+    );
+
+  }
+);
