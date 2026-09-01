@@ -1,63 +1,18 @@
 const mongoose = require("mongoose");
 
-const { Schema } = mongoose;
+/* =========================================================
+   CUSTOMER
+========================================================= */
 
-// =====================================================
-// USER
-// =====================================================
-
-const userSchema = new Schema(
+const customerSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
-      trim: true
+      index: true
     },
 
-    email: {
-      type: String,
-      unique: true,
-      sparse: true,
-      lowercase: true,
-      trim: true
-    },
-
-    phone: {
-      type: String,
-      unique: true,
-      sparse: true,
-      trim: true
-    },
-
-    passwordHash: {
-      type: String,
-      required: true,
-      select: false
-    },
-
-    role: {
-      type: String,
-      enum: ["admin", "manager", "employee"],
-      default: "admin"
-    },
-
-    isActive: {
-      type: Boolean,
-      default: true
-    }
-  },
-  {
-    timestamps: true
-  }
-);
-
-
-// =====================================================
-// CUSTOMER
-// =====================================================
-
-const customerSchema = new Schema(
-  {
     name: {
       type: String,
       required: true,
@@ -72,7 +27,8 @@ const customerSchema = new Schema(
 
     address: {
       type: String,
-      default: ""
+      default: "",
+      trim: true
     },
 
     gender: {
@@ -92,48 +48,24 @@ const customerSchema = new Schema(
 );
 
 
-// =====================================================
-// MEASUREMENT
-// =====================================================
+/* =========================================================
+   MEASUREMENT
+========================================================= */
 
-const measurementFields = {
-  qaddPirahan: Number,
-  shana: Number,
-  astin: Number,
-  baghal: Number,
-  kamar: Number,
-  balaTana: Number,
-  sorin: Number,
-  qaddKarti: Number,
-  qaddVest: Number,
-  qaddDaman: Number,
-  qaddShalwar: Number,
-  barDaman: Number,
-  pachah: Number,
-  barYakhon: Number,
-  dehanAstin: Number
-};
-
-const maleMeasurementSchema = new Schema(
-  measurementFields,
+const measurementSchema = new mongoose.Schema(
   {
-    _id: false
-  }
-);
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true
+    },
 
-const femaleMeasurementSchema = new Schema(
-  measurementFields,
-  {
-    _id: false
-  }
-);
-
-const measurementSchema = new Schema(
-  {
     customerId: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",
-      required: true
+      required: true,
+      index: true
     },
 
     gender: {
@@ -149,13 +81,52 @@ const measurementSchema = new Schema(
     },
 
     male: {
-      type: maleMeasurementSchema,
-      default: undefined
+      qaddPirahan: Number,
+      shana: Number,
+      astin: Number,
+      baghal: Number,
+
+      // کمر حذف شده
+      // بالاتنه حذف شده
+      // سینه حذف شده
+      // قد کرتی حذف شده
+      // قد واسکت حذف شده
+
+      qaddDaman: Number,
+      qaddShalwar: Number,
+
+      barDaman: Number,
+
+      // کف اضافه شد
+      kaf: Number,
+
+      pachah: Number,
+      barYakhon: Number,
+      dehanAstin: Number
     },
 
     female: {
-      type: femaleMeasurementSchema,
-      default: undefined
+      qaddPirahan: Number,
+      shana: Number,
+      astin: Number,
+      baghal: Number,
+
+      kamar: Number,
+      balaTana: Number,
+      sorin: Number,
+
+      qaddKarti: Number,
+      qaddVest: Number,
+
+      qaddDaman: Number,
+      qaddShalwar: Number,
+
+      barDaman: Number,
+      kaf: Number,
+
+      pachah: Number,
+      barYakhon: Number,
+      dehanAstin: Number
     },
 
     notes: {
@@ -169,46 +140,36 @@ const measurementSchema = new Schema(
 );
 
 
-// =====================================================
-// ORDER
-// =====================================================
+/* =========================================================
+   ORDER
+========================================================= */
 
-const orderSchema = new Schema(
+const orderSchema = new mongoose.Schema(
   {
-    orderNumber: {
-      type: String,
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
-      unique: true
+      index: true
     },
 
     customerId: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",
-      required: true
+      required: true,
+      index: true
     },
 
-    measurementId: {
-      type: Schema.Types.ObjectId,
-      ref: "Measurement"
+    orderNumber: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true
     },
 
     description: {
       type: String,
       default: ""
-    },
-
-    status: {
-      type: String,
-      enum: [
-        "registered",
-        "cutting",
-        "sewing",
-        "fitting",
-        "ready",
-        "delivered",
-        "cancelled"
-      ],
-      default: "registered"
     },
 
     price: {
@@ -241,11 +202,18 @@ const orderSchema = new Schema(
       min: 0
     },
 
-    deliveryDate: Date,
-
-    notes: {
+    status: {
       type: String,
-      default: ""
+      enum: [
+        "registered",
+        "cutting",
+        "sewing",
+        "fitting",
+        "ready",
+        "delivered",
+        "cancelled"
+      ],
+      default: "registered"
     }
   },
   {
@@ -254,20 +222,27 @@ const orderSchema = new Schema(
 );
 
 
-// =====================================================
-// PAYMENT
-// =====================================================
+/* =========================================================
+   PAYMENT
+========================================================= */
 
-const paymentSchema = new Schema(
+const paymentSchema = new mongoose.Schema(
   {
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true
+    },
+
     customerId: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",
       required: true
     },
 
     orderId: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Order",
       required: true
     },
@@ -292,11 +267,6 @@ const paymentSchema = new Schema(
     note: {
       type: String,
       default: ""
-    },
-
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User"
     }
   },
   {
@@ -305,12 +275,19 @@ const paymentSchema = new Schema(
 );
 
 
-// =====================================================
-// EXPENSE
-// =====================================================
+/* =========================================================
+   EXPENSE
+========================================================= */
 
-const expenseSchema = new Schema(
+const expenseSchema = new mongoose.Schema(
   {
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true
+    },
+
     title: {
       type: String,
       required: true,
@@ -325,17 +302,12 @@ const expenseSchema = new Schema(
 
     category: {
       type: String,
-      default: "other"
+      default: ""
     },
 
     description: {
       type: String,
       default: ""
-    },
-
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User"
     }
   },
   {
@@ -344,12 +316,19 @@ const expenseSchema = new Schema(
 );
 
 
-// =====================================================
-// INVENTORY
-// =====================================================
+/* =========================================================
+   INVENTORY
+========================================================= */
 
-const inventorySchema = new Schema(
+const inventorySchema = new mongoose.Schema(
   {
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true
+    },
+
     name: {
       type: String,
       required: true,
@@ -358,7 +337,7 @@ const inventorySchema = new Schema(
 
     category: {
       type: String,
-      default: "other"
+      default: ""
     },
 
     quantity: {
@@ -382,11 +361,6 @@ const inventorySchema = new Schema(
       type: Number,
       default: 0,
       min: 0
-    },
-
-    notes: {
-      type: String,
-      default: ""
     }
   },
   {
@@ -395,38 +369,77 @@ const inventorySchema = new Schema(
 );
 
 
-// =====================================================
-// INVOICE
-// =====================================================
+/* =========================================================
+   EMPLOYEE
+========================================================= */
 
-const invoiceSchema = new Schema(
+const employeeSchema = new mongoose.Schema(
   {
-    invoiceNumber: {
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true
+    },
+
+    name: {
       type: String,
       required: true,
-      unique: true
+      trim: true
+    },
+
+    phone: {
+      type: String,
+      default: ""
+    },
+
+    position: {
+      type: String,
+      default: ""
+    },
+
+    salary: {
+      type: Number,
+      default: 0,
+      min: 0
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+
+/* =========================================================
+   INVOICE
+========================================================= */
+
+const invoiceSchema = new mongoose.Schema(
+  {
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true
     },
 
     orderId: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Order",
       required: true
     },
 
     customerId: {
-      type: Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       ref: "Customer",
       required: true
     },
 
-    subtotal: {
-      type: Number,
-      default: 0
-    },
-
-    discount: {
-      type: Number,
-      default: 0
+    invoiceNumber: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true
     },
 
     total: {
@@ -442,11 +455,6 @@ const invoiceSchema = new Schema(
     remaining: {
       type: Number,
       default: 0
-    },
-
-    notes: {
-      type: String,
-      default: ""
     }
   },
   {
@@ -455,59 +463,17 @@ const invoiceSchema = new Schema(
 );
 
 
-// =====================================================
-// EMPLOYEE
-// =====================================================
+/* =========================================================
+   NOTIFICATION
+========================================================= */
 
-const employeeSchema = new Schema(
+const notificationSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true
-    },
-
-    phone: {
-      type: String,
-      default: ""
-    },
-
-    position: {
-      type: String,
-      default: ""
-    },
-
-    salary: {
-      type: Number,
-      default: 0
-    },
-
-    status: {
-      type: String,
-      enum: ["active", "inactive"],
-      default: "active"
-    },
-
-    notes: {
-      type: String,
-      default: ""
-    }
-  },
-  {
-    timestamps: true
-  }
-);
-
-
-// =====================================================
-// NOTIFICATION
-// =====================================================
-
-const notificationSchema = new Schema(
-  {
-    userId: {
-      type: Schema.Types.ObjectId,
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
+      index: true
     },
 
     title: {
@@ -517,7 +483,7 @@ const notificationSchema = new Schema(
 
     message: {
       type: String,
-      required: true
+      default: ""
     },
 
     type: {
@@ -536,15 +502,23 @@ const notificationSchema = new Schema(
 );
 
 
-// =====================================================
-// SETTINGS
-// =====================================================
+/* =========================================================
+   SETTINGS
+========================================================= */
 
-const settingSchema = new Schema(
+const settingSchema = new mongoose.Schema(
   {
+    ownerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true,
+      index: true
+    },
+
     shopName: {
       type: String,
-      default: "خیاط‌یار"
+      default: "خیاطی من"
     },
 
     ownerName: {
@@ -567,14 +541,9 @@ const settingSchema = new Schema(
       default: "AFN"
     },
 
-    logo: {
-      type: String,
-      default: ""
-    },
-
     invoiceFooter: {
       type: String,
-      default: ""
+      default: "با تشکر از اعتماد شما"
     }
   },
   {
@@ -583,54 +552,138 @@ const settingSchema = new Schema(
 );
 
 
-// =====================================================
-// MODELS
-// =====================================================
+/* =========================================================
+   USER
+========================================================= */
+
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+
+    email: {
+      type: String,
+      unique: true,
+      sparse: true,
+      lowercase: true,
+      trim: true
+    },
+
+    phone: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true
+    },
+
+    password: {
+      type: String,
+      required: true
+    },
+
+    role: {
+      type: String,
+      enum: [
+        "admin",
+        "user"
+      ],
+      default: "admin"
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+
+/* =========================================================
+   MODELS
+========================================================= */
 
 const User =
   mongoose.models.User ||
-  mongoose.model("User", userSchema);
+  mongoose.model(
+    "User",
+    userSchema
+  );
 
 const Customer =
   mongoose.models.Customer ||
-  mongoose.model("Customer", customerSchema);
+  mongoose.model(
+    "Customer",
+    customerSchema
+  );
 
 const Measurement =
   mongoose.models.Measurement ||
-  mongoose.model("Measurement", measurementSchema);
+  mongoose.model(
+    "Measurement",
+    measurementSchema
+  );
 
 const Order =
   mongoose.models.Order ||
-  mongoose.model("Order", orderSchema);
+  mongoose.model(
+    "Order",
+    orderSchema
+  );
 
 const Payment =
   mongoose.models.Payment ||
-  mongoose.model("Payment", paymentSchema);
+  mongoose.model(
+    "Payment",
+    paymentSchema
+  );
 
 const Expense =
   mongoose.models.Expense ||
-  mongoose.model("Expense", expenseSchema);
+  mongoose.model(
+    "Expense",
+    expenseSchema
+  );
 
 const Inventory =
   mongoose.models.Inventory ||
-  mongoose.model("Inventory", inventorySchema);
-
-const Invoice =
-  mongoose.models.Invoice ||
-  mongoose.model("Invoice", invoiceSchema);
+  mongoose.model(
+    "Inventory",
+    inventorySchema
+  );
 
 const Employee =
   mongoose.models.Employee ||
-  mongoose.model("Employee", employeeSchema);
+  mongoose.model(
+    "Employee",
+    employeeSchema
+  );
+
+const Invoice =
+  mongoose.models.Invoice ||
+  mongoose.model(
+    "Invoice",
+    invoiceSchema
+  );
 
 const Notification =
   mongoose.models.Notification ||
-  mongoose.model("Notification", notificationSchema);
+  mongoose.model(
+    "Notification",
+    notificationSchema
+  );
 
 const Setting =
   mongoose.models.Setting ||
-  mongoose.model("Setting", settingSchema);
+  mongoose.model(
+    "Setting",
+    settingSchema
+  );
 
+
+/* =========================================================
+   EXPORT
+========================================================= */
 
 module.exports = {
   User,
@@ -640,8 +693,8 @@ module.exports = {
   Payment,
   Expense,
   Inventory,
-  Invoice,
   Employee,
+  Invoice,
   Notification,
   Setting
 };
